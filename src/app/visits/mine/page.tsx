@@ -1,0 +1,67 @@
+import Link from "next/link";
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import { DeleteButton } from "./DeleteButton";
+
+export default async function MyVisitsPage() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/auth/login");
+
+  const { data: visits } = await supabase
+    .from("visits")
+    .select(
+      "id, visited_on, place_rating, place_comment, places(id, name), dish_reviews(id, idea, execution, flavor, would_repeat, dishes(name))"
+    )
+    .eq("user_id", user.id)
+    .order("visited_on", { ascending: false });
+
+  return (
+    <div className="mx-auto max-w-2xl px-4 py-6">
+      <h1 className="mb-4 text-xl font-semibold">Mis visitas</h1>
+      <ul className="flex flex-col gap-3">
+        {visits?.map((v) => (
+          <li key={v.id} className="rounded-xl border border-neutral-200 p-4">
+            <div className="flex items-start justify-between">
+              <div>
+                <Link href={`/places/${v.places?.id}`} className="font-medium text-blue-600">
+                  {v.places?.name}
+                </Link>
+                <div className="text-xs text-neutral-500">{v.visited_on}</div>
+              </div>
+              <div className="flex items-center gap-3">
+                <Link href={`/visits/${v.id}/edit`} className="text-xs text-neutral-500">
+                  editar
+                </Link>
+                <DeleteButton visitId={v.id} />
+              </div>
+            </div>
+            {v.place_rating && <div className="mt-1 text-sm">{"★".repeat(v.place_rating)}</div>}
+            {v.place_comment && <p className="mt-1 text-sm text-neutral-700">{v.place_comment}</p>}
+            {v.dish_reviews.length > 0 && (
+              <ul className="mt-2 flex flex-col gap-1 border-t pt-2 text-sm">
+                {v.dish_reviews.map((dr) => (
+                  <li key={dr.id} className="text-neutral-600">
+                    {dr.dishes?.name}: idea {dr.idea}, ejecución {dr.execution}, sabor {dr.flavor}
+                    {dr.would_repeat ? " · repetiría" : " · no repetiría"}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </li>
+        ))}
+        {(!visits || visits.length === 0) && (
+          <p className="py-8 text-center text-sm text-neutral-400">
+            Todavía no has registrado ninguna visita.{" "}
+            <Link href="/visits/new" className="text-blue-600">
+              Registra la primera
+            </Link>
+            .
+          </p>
+        )}
+      </ul>
+    </div>
+  );
+}
