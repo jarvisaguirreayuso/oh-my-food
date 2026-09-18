@@ -32,6 +32,14 @@ declare
   v_dish record;
   v_dish_score int;
 begin
+  -- Deterministic jitter: without a fixed seed, `random()` differs on every
+  -- `supabase db reset`, and the 90-day trend windows are thin enough
+  -- (n~10) that jitter can occasionally push the improving/declining places'
+  -- delta across the trend_delta_threshold() boundary, making
+  -- tests/trends.test.ts flaky. Fixing the seed keeps the synthetic data
+  -- reproducible while still looking "random".
+  perform setseed(0.1);
+
   -- 1) Test users (minimal columns required by GoTrue's auth.users schema).
   insert into auth.users (
     instance_id, id, aud, role, email, encrypted_password,
