@@ -39,39 +39,69 @@ supabase/
   seed.sql                Local-only dev seed (see below)
   config.toml             Local Supabase CLI stack config
 tests/
-  rls.test.ts             RLS policy tests (vitest, hits local stack)
+  rls.test.ts             RLS policy and privilege tests (vitest, hits local stack)
+  social.test.ts          Privacy leak battery: audiences, follows, general scores
   trends.test.ts          Trend/timeseries RPC tests (vitest, hits local stack)
 ```
 
 ## Data model (high level)
 
-- `profiles` — one row per auth user (username, avatar), created via a
-  trigger on `auth.users`.
+- `profiles` — one row per auth user (`username` chosen by the person,
+  `display_name`, `bio`, avatar), created via a trigger on `auth.users` with a
+  provisional `user_<12 hex>` username. `profile_settings` holds each user's
+  private defaults for new visits (owner-only).
+- `follows` — directed follow graph. "Friend" = mutual follow. Private: you
+  only ever see the rows you take part in.
 - `places` — restaurants/stalls/trucks/market stalls. `name_normalized` is a
   generated column (unaccented, lowercased) used for fuzzy duplicate
   detection (`pg_trgm` + `unaccent`).
 - `dishes` — belong to a place; unique per place on `name_normalized`.
 - `visits` — the central unit: `(user_id, place_id, visited_on)` unique,
   `visited_on` can't be in the future, `place_rating` is optional (1-5).
+  Each visit has an `audience` (`public` / `followers` / `mutuals` /
+  `private`) and `pools_publicly` (whether its rating also counts, nameless,
+  in the place's general average).
 - `dish_reviews` — belong to a visit; unique per `(visit_id, dish_id)`;
   `idea`/`execution`/`flavor` (1-5), `would_repeat` (bool), optional comment.
   A trigger enforces that the reviewed dish actually belongs to the visit's
   place.
 
-RLS: everything is publicly readable, except that anonymous visitors cannot
-read `visits.user_id` (who wrote a visit). Writes are scoped to the owner
-(`user_id`/`created_by` = `auth.uid()`). `visits`/`dish_reviews` are
-editable/deletable only by their author. `places`/`dishes` can never be
-deleted by clients and are editable only by their creator. See
-`supabase/migrations/20260918100004_rls.sql`.
+### Privacy model
+
+One rule: **a review is visible to you if and only if its author allowed you
+to see their identity.** If you can't see who wrote it, you can't see its
+rating either. It is a single RLS policy on `visits`
+(`visits_select_attributed`, migration `20260920100000_social_core.sql`);
+`dish_reviews` inherit it through their visit. `private` matches no branch, so
+nobody but the author can read it.
+
+- Without an account (`anon`) you can read `places` and `dishes` and their
+  **general averages**, never a single visit, its author, date or comment.
+  `anon` has no privileges at all on `visits`, `dish_reviews`, `profiles`
+  or `follows`.
+- The general averages come from `place_general_scores` and
+  `dish_general_scores`, the **only `security definer` functions**. They return
+  aggregates only, count only visits with `pools_publicly`, and take nothing
+  but a bounded list of ids. Read the invariants in the migration before
+  touching them.
+- Every other RPC (`place_stats`, `place_trend`, timeseries, rankings) is
+  `security invoker`, so it aggregates exactly what the caller can already
+  read. Don't turn any of them into `definer`.
+- A `private` visit can't pool (`visits_private_never_pools`): anonymous
+  reviews are deliberately not enabled yet (open question B.9 #2 in
+  `docs/plan-fase-2-social.md`).
+- Pages whose content depends on the viewer must never be cached (no ISR, no
+  `revalidate`, no CDN cache).
+
+Writes are scoped to the owner (`user_id`/`created_by` = `auth.uid()`).
+`visits`/`dish_reviews` are editable/deletable only by their author.
+`places`/`dishes` can never be deleted by clients and are editable only by
+their creator.
 
 Table privileges are a second line of defence, because RLS does not cover
 everything (e.g. `TRUNCATE`). `20260919100000_lock_down_grants.sql` revokes
-Supabase's default grants and leaves `anon` with read-only access (no
-`visits.user_id`) and `authenticated` with only the writes that RLS then
-scopes. Consequences for code: anonymous clients must list `visits` columns
-explicitly (`select *` is rejected) and cannot embed `profiles` through
-`visits`; any new table or RPC needs an explicit `grant`.
+Supabase's default grants and leaves `anon` and `authenticated` with the
+minimum. Any new table or RPC needs an explicit `grant`.
 
 ## Temporal metrics
 
@@ -157,7 +187,7 @@ supabase start && supabase db reset   # local stack must be up and seeded
 npm test
 ```
 
-`tests/rls.test.ts` and `tests/trends.test.ts` are integration tests that
+`tests/rls.test.ts`, `tests/social.test.ts` and `tests/trends.test.ts` are integration tests that
 hit the local stack directly (see `tests/README.md`) — they sign in as the
 seed users and assert RLS blocks cross-user writes, and assert the trend/
 timeseries RPCs correctly classify the seed's known improving/declining/

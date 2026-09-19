@@ -51,6 +51,7 @@ describe("row level security", () => {
         visited_on: "2020-01-15",
         place_rating: 5,
         place_comment: "rls fixture",
+        audience: "public",
       })
       .select("id")
       .single();
@@ -84,35 +85,20 @@ describe("row level security", () => {
   // silently filters rows.
   const INSUFFICIENT_PRIVILEGE = "42501";
 
-  it("lets anon read visits and dish_reviews, but never who wrote a visit", async () => {
-    const { data, error } = await client()
-      .from("visits")
-      .select("id, place_id, visited_on, place_rating, place_comment")
-      .eq("id", ownVisitId);
-    expect(error).toBeNull();
-    expect(data).toHaveLength(1);
+  it("gives anon no access to visits, dish_reviews or profiles (only general scores)", async () => {
+    // B.9 #3: without an account only place/dish names and general averages are
+    // visible. Not even the columns that used to be allowed.
+    for (const table of ["visits", "dish_reviews", "profiles"] as const) {
+      const { error } = await client().from(table).select("id").limit(1);
+      expect(error?.code, `anon select on ${table}`).toBe(INSUFFICIENT_PRIVILEGE);
+    }
+    const userId = await client().from("visits").select("user_id").eq("id", ownVisitId);
+    expect(userId.error?.code).toBe(INSUFFICIENT_PRIVILEGE);
 
-    const { data: reviews, error: reviewsErr } = await client()
-      .from("dish_reviews")
-      .select("id, dish_id, flavor")
-      .eq("id", ownDishReviewId);
-    expect(reviewsErr).toBeNull();
-    expect(reviews).toHaveLength(1);
-  });
-
-  it("hides visits.user_id from anon (select, filter, star and embed)", async () => {
-    const selectUserId = await client().from("visits").select("user_id").eq("id", ownVisitId);
-    expect(selectUserId.error?.code).toBe(INSUFFICIENT_PRIVILEGE);
-
-    // Filtering by the column would be an oracle even without selecting it.
-    const filterByUser = await client().from("visits").select("id").eq("user_id", SEED_USERS.ana.id);
-    expect(filterByUser.error?.code).toBe(INSUFFICIENT_PRIVILEGE);
-
-    const selectStar = await client().from("visits").select("*").eq("id", ownVisitId);
-    expect(selectStar.error?.code).toBe(INSUFFICIENT_PRIVILEGE);
-
-    const embedAuthor = await client().from("visits").select("id, profiles(username)").eq("id", ownVisitId);
-    expect(embedAuthor.error?.code).toBe(INSUFFICIENT_PRIVILEGE);
+    // places and dishes stay public business data.
+    const places = await client().from("places").select("id, name").limit(1);
+    expect(places.error).toBeNull();
+    expect(places.data).toHaveLength(1);
   });
 
   it("still lets signed-in users read visits.user_id", async () => {
@@ -166,7 +152,7 @@ describe("row level security", () => {
     expect(error).toBeNull();
     expect(data).toHaveLength(0); // RLS filtered the row out, nothing updated
 
-    const { data: check } = await client().from("visits").select("place_comment").eq("id", ownVisitId).single();
+    const { data: check } = await anaClient.from("visits").select("place_comment").eq("id", ownVisitId).single();
     expect(check?.place_comment).toBe("rls fixture");
   });
 
@@ -175,7 +161,7 @@ describe("row level security", () => {
     expect(error).toBeNull();
     expect(data).toHaveLength(0);
 
-    const { data: check } = await client().from("visits").select("id").eq("id", ownVisitId);
+    const { data: check } = await anaClient.from("visits").select("id").eq("id", ownVisitId);
     expect(check).toHaveLength(1);
   });
 

@@ -19,7 +19,7 @@ export const newPlaceSchema = z.object({
 export type NewPlaceInput = z.infer<typeof newPlaceSchema>;
 
 export const dishRatingSchema = z.object({
-  dishId: z.string().uuid().nullable(),
+  dishId: z.guid().nullable(),
   dishName: z.string().trim().min(2).max(120).nullable(),
   idea: z.number().int().min(1).max(5),
   execution: z.number().int().min(1).max(5),
@@ -32,8 +32,11 @@ export const dishRatingSchema = z.object({
 });
 export type DishRatingInput = z.infer<typeof dishRatingSchema>;
 
+export const audienceSchema = z.enum(["public", "followers", "mutuals", "private"]);
+export type Audience = z.infer<typeof audienceSchema>;
+
 export const visitSchema = z.object({
-  placeId: z.string().uuid(),
+  placeId: z.guid(),
   visitedOn: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha inválida")
@@ -41,8 +44,42 @@ export const visitSchema = z.object({
   placeRating: z.number().int().min(1).max(5).optional().nullable(),
   placeComment: z.string().trim().max(2000).optional().nullable(),
   dishes: z.array(dishRatingSchema).default([]),
+  // Omitted = use the user's defaults on insert / keep the current value on update.
+  audience: audienceSchema.optional(),
+  poolsPublicly: z.boolean().optional(),
 });
 export type VisitInput = z.infer<typeof visitSchema>;
 
 export const granularitySchema = z.enum(["month", "quarter"]);
 export type Granularity = z.infer<typeof granularitySchema>;
+
+// Usernames appear in URLs (/u/<username>), so keep them lowercase and URL-safe.
+// Must match the profiles_username_format check in the database.
+const RESERVED_USERNAMES = ["admin", "root", "system", "support", "soporte", "ohmyfood", "oh_my_food", "api", "me"];
+
+export const usernameSchema = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .regex(/^[a-z0-9_]{3,20}$/, "De 3 a 20 caracteres: letras minúsculas, números o _")
+  .refine((u) => !RESERVED_USERNAMES.includes(u), "Ese nombre de usuario no está disponible");
+
+// Accounts start with a generated `user_<12 hex>` username until the person picks one.
+export const isProvisionalUsername = (username: string) => /^user_[0-9a-f]{12}$/.test(username);
+
+export const profileSchema = z
+  .object({
+    username: usernameSchema,
+    displayName: z.string().trim().max(60, "Máximo 60 caracteres").nullable(),
+    bio: z.string().trim().max(280, "Máximo 280 caracteres").nullable(),
+    defaultAudience: audienceSchema,
+    defaultPoolsPublicly: z.boolean(),
+  })
+  .transform((p) => ({
+    ...p,
+    displayName: p.displayName || null,
+    bio: p.bio || null,
+    // A private visit can never count towards the general average.
+    defaultPoolsPublicly: p.defaultAudience === "private" ? false : p.defaultPoolsPublicly,
+  }));
+export type ProfileInput = z.infer<typeof profileSchema>;

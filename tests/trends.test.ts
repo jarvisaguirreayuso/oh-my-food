@@ -1,7 +1,7 @@
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/database.types";
-import { SEED_PLACES, SUPABASE_ANON_KEY, SUPABASE_URL } from "./env";
+import { SEED_PLACES, SEED_USERS, SUPABASE_ANON_KEY, SUPABASE_URL } from "./env";
 
 // Validates the temporal RPCs (supabase/migrations/20260918100006 and
 // ...100007) against supabase/seed.sql's known, deliberately-shaped data:
@@ -10,6 +10,14 @@ import { SEED_PLACES, SUPABASE_ANON_KEY, SUPABASE_URL } from "./env";
 // ~1 visit/quarter -> should read as insufficient_data).
 
 const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// The temporal RPCs run as SECURITY INVOKER, so they aggregate what the caller
+// is allowed to read. Anonymous callers read no visits at all; the seed's visits
+// are public, so any signed-in user sees all of them.
+beforeAll(async () => {
+  const { error } = await supabase.auth.signInWithPassword(SEED_USERS.ana);
+  if (error) throw error;
+});
 
 // Wide enough to cover the seed's ~18 months of synthetic history relative
 // to "today", without generating an excessive number of empty periods.

@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import { PlacePicker } from "@/components/PlacePicker";
 import { StarInput } from "@/components/StarInput";
 import { DishEntry, type DishEntryValue } from "@/components/DishEntry";
+import { AudiencePicker, type AudienceValue } from "@/components/AudiencePicker";
 import { submitVisit, type SaveVisitState } from "./actions";
 
 const initialState: SaveVisitState = { status: "idle" };
@@ -24,13 +25,20 @@ function emptyDish(): DishEntryValue {
   };
 }
 
-export function NewVisitForm({ initialPlace }: { initialPlace: { id: string; name: string } | null }) {
+export function NewVisitForm({
+  initialPlace,
+  defaults,
+}: {
+  initialPlace: { id: string; name: string } | null;
+  defaults: AudienceValue;
+}) {
   const [state, formAction, pending] = useActionState(submitVisit, initialState);
   const [place, setPlace] = useState<{ id: string; name: string } | null>(initialPlace);
   const [visitedOn, setVisitedOn] = useState(todayISO());
   const [placeRating, setPlaceRating] = useState<number | null>(null);
   const [placeComment, setPlaceComment] = useState("");
   const [dishes, setDishes] = useState<DishEntryValue[]>([]);
+  const [privacy, setPrivacy] = useState<AudienceValue>(defaults);
 
   const payload = place
     ? JSON.stringify({
@@ -39,6 +47,8 @@ export function NewVisitForm({ initialPlace }: { initialPlace: { id: string; nam
         placeRating,
         placeComment: placeComment || null,
         dishes: dishes.filter((d) => d.dishId || (d.dishName && d.dishName.trim().length >= 2)),
+        audience: privacy.audience,
+        poolsPublicly: privacy.poolsPublicly,
       })
     : "";
 
@@ -115,6 +125,14 @@ export function NewVisitForm({ initialPlace }: { initialPlace: { id: string; nam
                 </p>
               )}
             </div>
+          </div>
+
+          <div>
+            <p className="mb-2 text-sm font-medium">¿Quién puede ver esta reseña?</p>
+            <AudiencePicker initial={privacy} onChange={setPrivacy} />
+            <p className="mt-2 text-xs text-neutral-400">
+              Puedes cambiar tus valores por defecto en tu perfil.
+            </p>
           </div>
 
           <button

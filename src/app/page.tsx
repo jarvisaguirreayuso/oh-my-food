@@ -1,73 +1,98 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getPlaceGeneralScores } from "@/lib/places";
+import { isProvisionalUsername } from "@/lib/validation";
+import { PlaceList } from "@/components/PlaceList";
+import { VisitCard } from "@/components/VisitCard";
 
-const TYPE_LABELS: Record<string, string> = {
-  restaurant: "Restaurante",
-  food_stall: "Puesto",
-  food_truck: "Food truck",
-  market_stall: "Puesto de mercado",
-  other: "Otro",
-};
-
-export default async function HomePage({
-  searchParams,
-}: {
-  searchParams: Promise<{ q?: string }>;
-}) {
-  const { q } = await searchParams;
+export default async function HomePage() {
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  const { data: places } = q
-    ? await supabase.rpc("search_places", { p_query: q }).limit(30)
-    : await supabase
-        .from("places")
-        .select("id, name, type, address")
+  if (!user) return <Landing />;
+
+  // First login: ask for a real username before anything else.
+  const { data: me } = await supabase.from("profiles").select("username").eq("id", user.id).single();
+  if (me && isProvisionalUsername(me.username)) redirect("/me/edit?welcome=1");
+
+  const { data: follows } = await supabase.from("follows").select("followee_id").eq("follower_id", user.id);
+  const followeeIds = follows?.map((f) => f.followee_id) ?? [];
+
+  // RLS already limits this to visits whose author let us see them.
+  const { data: visits } = followeeIds.length
+    ? await supabase
+        .from("visits")
+        .select(
+          "id, visited_on, place_rating, place_comment, audience, places(id, name), profiles(username, display_name), dish_reviews(id, idea, execution, flavor, would_repeat, dishes(name))"
+        )
+        .in("user_id", followeeIds)
         .order("created_at", { ascending: false })
-        .limit(30);
+        .limit(30)
+    : { data: [] };
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-6">
-      <form className="mb-6 flex gap-2">
-        <input
-          type="search"
-          name="q"
-          defaultValue={q}
-          placeholder="Buscar sitios…"
-          className="flex-1 rounded-lg border border-neutral-300 px-4 py-3 text-base outline-none focus:border-neutral-900"
-        />
-        <button className="rounded-lg bg-neutral-900 px-4 py-3 text-sm font-medium text-white">
-          Buscar
-        </button>
-      </form>
+      <h1 className="mb-4 text-lg font-semibold">Siguiendo</h1>
 
-      <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-lg font-semibold">{q ? `Resultados para “${q}”` : "Últimos sitios"}</h1>
-        <Link href="/places/new" className="text-sm font-medium text-blue-600">
-          + Nuevo sitio
+      {followeeIds.length === 0 ? (
+        <div className="rounded-xl border border-dashed border-neutral-300 px-4 py-8 text-center">
+          <p className="font-medium">Todavía no sigues a nadie</p>
+          <p className="mt-1 text-sm text-neutral-500">
+            Sigue a otra gente para ver aquí dónde comen y qué opinan.
+          </p>
+          <Link
+            href="/people"
+            className="mt-4 inline-block rounded-lg bg-neutral-900 px-4 py-2 text-sm font-medium text-white"
+          >
+            Buscar gente
+          </Link>
+        </div>
+      ) : visits && visits.length > 0 ? (
+        <ul className="flex flex-col gap-3">
+          {visits.map((v) => (
+            <VisitCard key={v.id} visit={v} showAuthor />
+          ))}
+        </ul>
+      ) : (
+        <p className="rounded-xl border border-dashed border-neutral-300 px-4 py-8 text-center text-sm text-neutral-500">
+          Las personas que sigues aún no han compartido ninguna visita contigo.
+        </p>
+      )}
+    </div>
+  );
+}
+
+async function Landing() {
+  const supabase = await createClient();
+  const { data: places } = await supabase
+    .from("places")
+    .select("id, name, type, address")
+    .order("created_at", { ascending: false })
+    .limit(10);
+  const scores = await getPlaceGeneralScores(supabase, places?.map((p) => p.id) ?? []);
+
+  return (
+    <div className="mx-auto max-w-2xl px-4 py-8">
+      <h1 className="text-3xl font-bold leading-tight">Dónde comes y cómo evoluciona.</h1>
+      <p className="mt-3 text-neutral-600">
+        Puntúa sitios y platos, sigue a tu gente y mira cómo cambia la calidad con el tiempo.
+      </p>
+      <div className="mt-5 flex gap-3">
+        <Link href="/auth/login" className="rounded-lg bg-neutral-900 px-5 py-3 font-medium text-white">
+          Entrar
+        </Link>
+        <Link href="/explore" className="rounded-lg border border-neutral-300 px-5 py-3 font-medium">
+          Ver sitios
         </Link>
       </div>
 
-      <ul className="flex flex-col gap-2">
-        {places?.map((p) => (
-          <li key={p.id}>
-            <Link
-              href={`/places/${p.id}`}
-              className="block rounded-lg border border-neutral-200 px-4 py-3 hover:border-neutral-400"
-            >
-              <div className="font-medium">{p.name}</div>
-              <div className="text-sm text-neutral-500">
-                {TYPE_LABELS[p.type] ?? p.type}
-                {p.address ? ` · ${p.address}` : ""}
-              </div>
-            </Link>
-          </li>
-        ))}
-        {places?.length === 0 && (
-          <p className="py-8 text-center text-sm text-neutral-400">
-            No hay sitios todavía. ¡Crea el primero!
-          </p>
-        )}
-      </ul>
+      <h2 className="mb-3 mt-10 text-sm font-semibold uppercase tracking-wide text-neutral-500">
+        Sitios recientes
+      </h2>
+      <PlaceList places={places} scores={scores} emptyMessage="Todavía no hay sitios." />
     </div>
   );
 }

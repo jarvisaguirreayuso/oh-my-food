@@ -3,7 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
 import "./globals.css";
 import { createClient } from "@/lib/supabase/server";
-import { signOut } from "@/app/auth/actions";
+import { BottomNav } from "@/components/BottomNav";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -37,28 +37,20 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
             <Link href="/" className="text-lg font-bold">
               🍽️ oh my food
             </Link>
-            <nav className="flex items-center gap-3 text-sm">
-              {user ? (
-                <>
-                  <Link href="/visits/new" className="font-medium">
-                    Registrar visita
-                  </Link>
-                  <Link href="/visits/mine" className="text-neutral-600">
-                    Mis visitas
-                  </Link>
-                  <form action={signOut}>
-                    <button className="text-neutral-400">Salir</button>
-                  </form>
-                </>
-              ) : (
+            {!user && (
+              <nav className="flex items-center gap-3 text-sm">
+                <Link href="/explore" className="text-neutral-600">
+                  Buscar
+                </Link>
                 <Link href="/auth/login" className="font-medium">
                   Entrar
                 </Link>
-              )}
-            </nav>
+              </nav>
+            )}
           </div>
         </header>
-        <main className="flex-1">{children}</main>
+        <main className={`flex-1 ${user ? "pb-24" : ""}`}>{children}</main>
+        {user && <BottomNav />}
       </body>
     </html>
   );

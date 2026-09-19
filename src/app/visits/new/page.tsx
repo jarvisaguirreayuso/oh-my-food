@@ -8,6 +8,7 @@ export default async function NewVisitPage({
   searchParams: Promise<{ place?: string }>;
 }) {
   const { place: rawPlaceId } = await searchParams;
+  const supabase = await createClient();
 
   // `?place=<id>` preselects the place (used by "Registrar visita" on a place's page).
   // An invalid or unknown id just falls back to the regular place picker.
@@ -15,10 +16,28 @@ export default async function NewVisitPage({
   let initialPlace: { id: string; name: string } | null = null;
   const placeId = z.guid().safeParse(rawPlaceId);
   if (placeId.success) {
-    const supabase = await createClient();
     const { data } = await supabase.from("places").select("id, name").eq("id", placeId.data).maybeSingle();
     initialPlace = data;
   }
 
-  return <NewVisitForm initialPlace={initialPlace} />;
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const { data: settings } = user
+    ? await supabase
+        .from("profile_settings")
+        .select("default_audience, default_pools_publicly")
+        .eq("user_id", user.id)
+        .maybeSingle()
+    : { data: null };
+
+  return (
+    <NewVisitForm
+      initialPlace={initialPlace}
+      defaults={{
+        audience: settings?.default_audience ?? "followers",
+        poolsPublicly: settings?.default_pools_publicly ?? true,
+      }}
+    />
+  );
 }

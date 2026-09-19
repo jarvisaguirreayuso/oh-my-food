@@ -1,43 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { TYPE_LABELS, getPlaceGeneralScores } from "@/lib/places";
 import { TrendBadge } from "@/components/TrendBadge";
 import { TimeseriesChart } from "@/components/TimeseriesChart";
-
-const TYPE_LABELS: Record<string, string> = {
-  restaurant: "Restaurante",
-  food_stall: "Puesto",
-  food_truck: "Food truck",
-  market_stall: "Puesto de mercado",
-  other: "Otro",
-};
-
-// Anonymous visitors can't read visits.user_id, so they can't embed the author
-// either: the author is only requested for signed-in users.
-async function loadReviews(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  placeId: string,
-  withAuthor: boolean
-) {
-  if (withAuthor) {
-    const { data } = await supabase
-      .from("visits")
-      .select("id, visited_on, place_rating, place_comment, profiles(username)")
-      .eq("place_id", placeId)
-      .not("place_rating", "is", null)
-      .order("visited_on", { ascending: false })
-      .limit(20);
-    return { data: data?.map((r) => ({ ...r, author: r.profiles?.username ?? null })) ?? null };
-  }
-  const { data } = await supabase
-    .from("visits")
-    .select("id, visited_on, place_rating, place_comment")
-    .eq("place_id", placeId)
-    .not("place_rating", "is", null)
-    .order("visited_on", { ascending: false })
-    .limit(20);
-  return { data: data?.map((r) => ({ ...r, author: null as string | null })) ?? null };
-}
 
 export default async function PlaceDetailPage({
   params,
@@ -59,29 +25,11 @@ export default async function PlaceDetailPage({
   const { data: place } = await supabase.from("places").select("*").eq("id", id).single();
   if (!place) notFound();
 
-  const today = new Date();
-  const from = new Date(today);
-  from.setMonth(from.getMonth() - 24);
-  const fromStr = from.toISOString().slice(0, 10);
-  const toStr = today.toISOString().slice(0, 10);
-
-  const [{ data: stats }, { data: trend }, { data: timeseries }, { data: rankings }, { data: reviews }] =
-    await Promise.all([
-      supabase.rpc("place_stats", { p_place_id: id }).single(),
-      supabase.rpc("place_trend", { p_place_id: id }).single(),
-      supabase.rpc("place_timeseries", {
-        p_place_id: id,
-        p_granularity: granularity,
-        p_from: fromStr,
-        p_to: toStr,
-      }),
-      supabase.rpc("dish_rankings_for_place", { p_place_id: id, p_order_by: order }),
-      loadReviews(supabase, id, Boolean(user)),
-    ]);
+  const general = (await getPlaceGeneralScores(supabase, [id])).get(id);
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-6">
-      <div className="mb-2 flex items-start justify-between">
+      <div className="mb-2 flex items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold">{place.name}</h1>
           <p className="text-sm text-neutral-500">
@@ -89,18 +37,119 @@ export default async function PlaceDetailPage({
             {place.address ? ` · ${place.address}` : ""}
           </p>
         </div>
+        {user && (
+          <Link
+            href={`/visits/new?place=${place.id}`}
+            className="shrink-0 rounded-lg bg-neutral-900 px-3 py-2 text-xs font-medium text-white"
+          >
+            Registrar visita
+          </Link>
+        )}
+      </div>
+
+      <div className="mt-4 rounded-xl border border-neutral-200 p-4">
+        <div className="flex items-end gap-3">
+          <div className="text-4xl font-bold">{general?.avg != null ? general.avg.toFixed(1) : "—"}</div>
+          <div className="pb-1 text-sm text-neutral-500">
+            <div className="font-medium text-neutral-700">Media general</div>
+            {general ? `${general.n} ${general.n === 1 ? "nota" : "notas"}` : "Todavía sin notas"}
+          </div>
+        </div>
+        <p className="mt-2 text-xs text-neutral-400">
+          Suma las notas que la gente ha querido contar, sin nombres.
+        </p>
+      </div>
+
+      {user ? <SignedInSections placeId={id} granularity={granularity} order={order} /> : <SignedOutSections placeId={id} />}
+    </div>
+  );
+}
+
+async function SignedOutSections({ placeId }: { placeId: string }) {
+  const supabase = await createClient();
+  const { data: dishes } = await supabase.from("dishes").select("id, name").eq("place_id", placeId).order("name");
+
+  return (
+    <>
+      <div className="mt-6 rounded-xl bg-neutral-50 px-4 py-4">
+        <p className="font-medium">Mira la evolución y lo que opina tu gente</p>
+        <p className="mt-1 text-sm text-neutral-500">
+          Con una cuenta ves la tendencia del sitio, sus platos y las reseñas de quien sigues.
+        </p>
         <Link
-          href={`/visits/new?place=${place.id}`}
-          className="shrink-0 rounded-lg bg-neutral-900 px-3 py-2 text-xs font-medium text-white"
+          href="/auth/login"
+          className="mt-3 inline-block rounded-lg bg-neutral-900 px-4 py-2 text-sm font-medium text-white"
         >
-          Registrar visita
+          Entrar
         </Link>
       </div>
 
+      {dishes && dishes.length > 0 && (
+        <div className="mt-8">
+          <h2 className="mb-2 text-sm font-semibold">Platos</h2>
+          <ul className="flex flex-col gap-2">
+            {dishes.map((d) => (
+              <li key={d.id}>
+                <Link
+                  href={`/dishes/${d.id}`}
+                  className="block rounded-lg border border-neutral-200 px-4 py-3 font-medium hover:border-neutral-400"
+                >
+                  {d.name}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </>
+  );
+}
+
+async function SignedInSections({
+  placeId,
+  granularity,
+  order,
+}: {
+  placeId: string;
+  granularity: "month" | "quarter";
+  order: string;
+}) {
+  const supabase = await createClient();
+
+  const today = new Date();
+  const from = new Date(today);
+  from.setMonth(from.getMonth() - 24);
+  const fromStr = from.toISOString().slice(0, 10);
+  const toStr = today.toISOString().slice(0, 10);
+
+  // Everything below is computed by RLS over the visits this user is allowed to
+  // read (their own, public ones, and those of people who let them see them).
+  const [{ data: stats }, { data: trend }, { data: timeseries }, { data: rankings }, { data: reviews }] =
+    await Promise.all([
+      supabase.rpc("place_stats", { p_place_id: placeId }).single(),
+      supabase.rpc("place_trend", { p_place_id: placeId }).single(),
+      supabase.rpc("place_timeseries", {
+        p_place_id: placeId,
+        p_granularity: granularity,
+        p_from: fromStr,
+        p_to: toStr,
+      }),
+      supabase.rpc("dish_rankings_for_place", { p_place_id: placeId, p_order_by: order }),
+      supabase
+        .from("visits")
+        .select("id, visited_on, place_rating, place_comment, profiles(username, display_name)")
+        .eq("place_id", placeId)
+        .not("place_rating", "is", null)
+        .order("visited_on", { ascending: false })
+        .limit(20),
+    ]);
+
+  return (
+    <>
       <div className="mt-4 flex items-end gap-4 rounded-xl border border-neutral-200 p-4">
         <div>
           <div className="text-4xl font-bold">{stats?.recent_avg ?? "—"}</div>
-          <div className="text-xs text-neutral-500">reciente (12 meses) · n={stats?.recent_n ?? 0}</div>
+          <div className="text-xs text-neutral-500">lo que ves tú · reciente (12 meses) · n={stats?.recent_n ?? 0}</div>
         </div>
         <div>
           <div className="text-lg font-medium text-neutral-500">{stats?.historical_avg ?? "—"}</div>
@@ -177,12 +226,18 @@ export default async function PlaceDetailPage({
       </div>
 
       <div className="mt-8">
-        <h2 className="mb-2 text-sm font-semibold">Reseñas</h2>
+        <h2 className="mb-2 text-sm font-semibold">Reseñas que puedes ver</h2>
         <ul className="flex flex-col gap-3">
           {reviews?.map((r) => (
             <li key={r.id} className="rounded-lg border border-neutral-200 px-4 py-3">
               <div className="flex items-center justify-between text-xs text-neutral-500">
-                <span>{r.author ?? "Usuario"}</span>
+                {r.profiles ? (
+                  <Link href={`/u/${r.profiles.username}`} className="font-medium text-neutral-800">
+                    {r.profiles.display_name || `@${r.profiles.username}`}
+                  </Link>
+                ) : (
+                  <span>Usuario</span>
+                )}
                 <span>{r.visited_on}</span>
               </div>
               <div className="mt-1 font-medium">{"★".repeat(r.place_rating ?? 0)}</div>
@@ -190,10 +245,12 @@ export default async function PlaceDetailPage({
             </li>
           ))}
           {(!reviews || reviews.length === 0) && (
-            <p className="text-sm text-neutral-400">Todavía no hay reseñas del sitio.</p>
+            <p className="text-sm text-neutral-400">
+              Todavía no hay reseñas que puedas ver. Sigue a más gente o registra la tuya.
+            </p>
           )}
         </ul>
       </div>
-    </div>
+    </>
   );
 }

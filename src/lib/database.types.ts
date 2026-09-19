@@ -133,6 +133,39 @@ export type Database = {
           },
         ]
       }
+      follows: {
+        Row: {
+          created_at: string
+          followee_id: string
+          follower_id: string
+        }
+        Insert: {
+          created_at?: string
+          followee_id: string
+          follower_id: string
+        }
+        Update: {
+          created_at?: string
+          followee_id?: string
+          follower_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "follows_followee_id_fkey"
+            columns: ["followee_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "follows_follower_id_fkey"
+            columns: ["follower_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       places: {
         Row: {
           address: string | null
@@ -177,22 +210,57 @@ export type Database = {
           },
         ]
       }
+      profile_settings: {
+        Row: {
+          default_audience: Database["public"]["Enums"]["audience"]
+          default_pools_publicly: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          default_audience?: Database["public"]["Enums"]["audience"]
+          default_pools_publicly?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          default_audience?: Database["public"]["Enums"]["audience"]
+          default_pools_publicly?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_settings_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
+          bio: string | null
           created_at: string
+          display_name: string | null
           id: string
           username: string
         }
         Insert: {
           avatar_url?: string | null
+          bio?: string | null
           created_at?: string
+          display_name?: string | null
           id: string
           username: string
         }
         Update: {
           avatar_url?: string | null
+          bio?: string | null
           created_at?: string
+          display_name?: string | null
           id?: string
           username?: string
         }
@@ -200,31 +268,37 @@ export type Database = {
       }
       visits: {
         Row: {
+          audience: Database["public"]["Enums"]["audience"]
           created_at: string
           id: string
           place_comment: string | null
           place_id: string
           place_rating: number | null
+          pools_publicly: boolean
           updated_at: string
           user_id: string
           visited_on: string
         }
         Insert: {
+          audience?: Database["public"]["Enums"]["audience"]
           created_at?: string
           id?: string
           place_comment?: string | null
           place_id: string
           place_rating?: number | null
+          pools_publicly?: boolean
           updated_at?: string
           user_id: string
           visited_on?: string
         }
         Update: {
+          audience?: Database["public"]["Enums"]["audience"]
           created_at?: string
           id?: string
           place_comment?: string | null
           place_id?: string
           place_rating?: number | null
+          pools_publicly?: boolean
           updated_at?: string
           user_id?: string
           visited_on?: string
@@ -252,6 +326,17 @@ export type Database = {
     }
     Functions: {
       _period_step: { Args: { p_granularity: string }; Returns: string }
+      dish_general_scores: {
+        Args: { p_dish_ids: string[] }
+        Returns: {
+          avg_execution: number
+          avg_flavor: number
+          avg_idea: number
+          dish_id: string
+          n: number
+          repeat_pct: number
+        }[]
+      }
       dish_rankings_for_place: {
         Args: { p_order_by?: string; p_place_id: string }
         Returns: {
@@ -311,6 +396,14 @@ export type Database = {
         }[]
       }
       normalize_text: { Args: { input: string }; Returns: string }
+      place_general_scores: {
+        Args: { p_place_ids: string[] }
+        Returns: {
+          avg_rating: number
+          n: number
+          place_id: string
+        }[]
+      }
       place_stats: {
         Args: { p_place_id: string }
         Returns: {
@@ -347,10 +440,12 @@ export type Database = {
       }
       save_visit: {
         Args: {
+          p_audience?: Database["public"]["Enums"]["audience"]
           p_dishes?: Json
           p_place_comment: string
           p_place_id: string
           p_place_rating: number
+          p_pools_publicly?: boolean
           p_visited_on: string
         }
         Returns: string
@@ -383,6 +478,7 @@ export type Database = {
       unaccent: { Args: { "": string }; Returns: string }
     }
     Enums: {
+      audience: "public" | "followers" | "mutuals" | "private"
       place_type:
         | "restaurant"
         | "food_stall"
@@ -519,6 +615,7 @@ export const Constants = {
   },
   public: {
     Enums: {
+      audience: ["public", "followers", "mutuals", "private"],
       place_type: [
         "restaurant",
         "food_stall",

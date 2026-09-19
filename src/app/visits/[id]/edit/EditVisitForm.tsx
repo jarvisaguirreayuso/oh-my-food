@@ -3,6 +3,8 @@
 import { useActionState, useState } from "react";
 import { StarInput } from "@/components/StarInput";
 import { DishEntry, type DishEntryValue } from "@/components/DishEntry";
+import { AudiencePicker, type AudienceValue } from "@/components/AudiencePicker";
+import type { Audience } from "@/lib/validation";
 import { updateVisit, type SaveVisitState } from "./actions";
 
 const initialState: SaveVisitState = { status: "idle" };
@@ -17,6 +19,8 @@ type VisitData = {
   place_rating: number | null;
   place_comment: string | null;
   place_id: string;
+  audience: Audience;
+  pools_publicly: boolean;
   places: { id: string; name: string } | null;
   dish_reviews: Array<{
     id: string;
@@ -35,6 +39,10 @@ export function EditVisitForm({ visit }: { visit: VisitData }) {
   const [visitedOn, setVisitedOn] = useState(visit.visited_on);
   const [placeRating, setPlaceRating] = useState<number | null>(visit.place_rating);
   const [placeComment, setPlaceComment] = useState(visit.place_comment ?? "");
+  const [privacy, setPrivacy] = useState<AudienceValue>({
+    audience: visit.audience,
+    poolsPublicly: visit.pools_publicly,
+  });
   const [dishes, setDishes] = useState<DishEntryValue[]>(
     visit.dish_reviews.map((dr) => ({
       dishId: dr.dish_id,
@@ -55,6 +63,8 @@ export function EditVisitForm({ visit }: { visit: VisitData }) {
     placeRating,
     placeComment: placeComment || null,
     dishes: dishes.filter((d) => d.dishId || (d.dishName && d.dishName.trim().length >= 2)),
+    audience: privacy.audience,
+    poolsPublicly: privacy.poolsPublicly,
   });
 
   return (
@@ -117,6 +127,14 @@ export function EditVisitForm({ visit }: { visit: VisitData }) {
             />
           ))}
         </div>
+      </div>
+
+      <div>
+        <p className="mb-2 text-sm font-medium">¿Quién puede ver esta reseña?</p>
+        <AudiencePicker initial={privacy} onChange={setPrivacy} />
+        <p className="mt-2 text-xs text-neutral-400">
+          Ampliar la audiencia es seguro. Al restringirla, quien ya la vio puede recordarla.
+        </p>
       </div>
 
       <button

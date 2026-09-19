@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { DeleteButton } from "./DeleteButton";
+import { AUDIENCE_LABELS } from "@/lib/audience";
 
 export default async function MyVisitsPage() {
   const supabase = await createClient();
@@ -13,7 +14,7 @@ export default async function MyVisitsPage() {
   const { data: visits } = await supabase
     .from("visits")
     .select(
-      "id, visited_on, place_rating, place_comment, places(id, name), dish_reviews(id, idea, execution, flavor, would_repeat, dishes(name))"
+      "id, visited_on, place_rating, place_comment, audience, pools_publicly, places(id, name), dish_reviews(id, idea, execution, flavor, would_repeat, dishes(name))"
     )
     .eq("user_id", user.id)
     .order("visited_on", { ascending: false });
@@ -29,7 +30,10 @@ export default async function MyVisitsPage() {
                 <Link href={`/places/${v.places?.id}`} className="font-medium text-blue-600">
                   {v.places?.name}
                 </Link>
-                <div className="text-xs text-neutral-500">{v.visited_on}</div>
+                <div className="text-xs text-neutral-500">
+                  {v.visited_on} · {AUDIENCE_LABELS[v.audience]}
+                  {v.pools_publicly ? " · cuenta en la media" : ""}
+                </div>
               </div>
               <div className="flex items-center gap-3">
                 <Link href={`/visits/${v.id}/edit`} className="text-xs text-neutral-500">

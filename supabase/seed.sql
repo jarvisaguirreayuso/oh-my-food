@@ -173,3 +173,16 @@ begin
     end if;
   end loop;
 end $$;
+
+-- Social seed. Seed visits are public so the trend tests (which read through
+-- RLS) keep seeing them, and there is a small follow graph to exercise the
+-- audiences: ana <-> bruno are mutual, carla follows ana, ana follows david,
+-- and nobody follows carla or bruno-only-ish otherwise.
+update public.visits set audience = 'public', pools_publicly = true;
+
+insert into public.follows (follower_id, followee_id) values
+  ('11111111-1111-1111-1111-111111111111', '22222222-2222-2222-2222-222222222222'),
+  ('22222222-2222-2222-2222-222222222222', '11111111-1111-1111-1111-111111111111'),
+  ('33333333-3333-3333-3333-333333333333', '11111111-1111-1111-1111-111111111111'),
+  ('11111111-1111-1111-1111-111111111111', '44444444-4444-4444-4444-444444444444')
+on conflict do nothing;
