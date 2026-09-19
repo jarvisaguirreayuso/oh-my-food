@@ -36,28 +36,28 @@ export function PlacePicker({
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         placeholder="Busca el sitio (nombre)…"
-        className="w-full rounded-lg border border-neutral-300 px-4 py-3 text-base outline-none focus:border-neutral-900"
+        className="w-full rounded-lg border border-stone-300 px-4 py-3 text-base outline-none focus:border-accent"
       />
-      {searchActive && loading && <p className="mt-2 text-xs text-neutral-400">Buscando…</p>}
+      {searchActive && loading && <p className="mt-2 text-xs text-stone-400">Buscando…</p>}
       {visibleResults.length > 0 && (
-        <ul className="mt-2 divide-y rounded-lg border border-neutral-200">
+        <ul className="mt-2 divide-y rounded-lg border border-stone-200">
           {visibleResults.map((p) => (
             <li key={p.id}>
               <button
                 type="button"
                 onClick={() => onSelect({ id: p.id, name: p.name })}
-                className="block w-full px-4 py-3 text-left hover:bg-neutral-50"
+                className="block w-full px-4 py-3 text-left hover:bg-stone-50"
               >
                 <div className="font-medium">{p.name}</div>
-                {p.address && <div className="text-xs text-neutral-500">{p.address}</div>}
+                {p.address && <div className="text-xs text-stone-500">{p.address}</div>}
               </button>
             </li>
           ))}
         </ul>
       )}
-      <p className="mt-3 text-sm text-neutral-500">
+      <p className="mt-3 text-sm text-stone-500">
         ¿No está en la lista?{" "}
-        <Link href="/places/new" className="font-medium text-blue-600">
+        <Link href="/places/new" className="font-medium text-accent">
           Crea el sitio
         </Link>{" "}
         y vuelve aquí para registrar la visita.

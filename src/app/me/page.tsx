@@ -29,47 +29,50 @@ export default async function MePage() {
     <div className="mx-auto max-w-2xl px-4 py-6">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold">{profile.display_name || `@${profile.username}`}</h1>
-          {profile.display_name && <p className="text-sm text-neutral-500">@{profile.username}</p>}
+          <h1 className="font-display text-2xl font-bold">{profile.display_name || `@${profile.username}`}</h1>
+          {profile.display_name && <p className="text-sm text-stone-500">@{profile.username}</p>}
         </div>
-        <Link href="/me/edit" className="rounded-full border border-neutral-300 px-4 py-1.5 text-sm font-medium">
+        <Link href="/me/edit" className="rounded-full border border-stone-300 px-4 py-1.5 text-sm font-medium">
           Editar perfil
         </Link>
       </div>
-      {profile.bio && <p className="mt-3 text-sm text-neutral-700">{profile.bio}</p>}
+      {profile.bio && <p className="mt-3 text-sm text-stone-700">{profile.bio}</p>}
 
       <div className="mt-5 grid grid-cols-3 gap-3 text-center">
-        <Link href="/people?tab=following" className="rounded-xl border border-neutral-200 p-3">
+        <Link href="/people?tab=following" className="rounded-xl border border-stone-200 p-3">
           <div className="text-xl font-bold">{following.count ?? 0}</div>
-          <div className="text-xs text-neutral-500">Siguiendo</div>
+          <div className="text-xs text-stone-500">Siguiendo</div>
         </Link>
-        <Link href="/people?tab=followers" className="rounded-xl border border-neutral-200 p-3">
+        <Link href="/people?tab=followers" className="rounded-xl border border-stone-200 p-3">
           <div className="text-xl font-bold">{followers.count ?? 0}</div>
-          <div className="text-xs text-neutral-500">Seguidores</div>
+          <div className="text-xs text-stone-500">Seguidores</div>
         </Link>
-        <Link href="/visits/mine" className="rounded-xl border border-neutral-200 p-3">
+        <Link href="/visits/mine" className="rounded-xl border border-stone-200 p-3">
           <div className="text-xl font-bold">{visits.count ?? 0}</div>
-          <div className="text-xs text-neutral-500">Visitas</div>
+          <div className="text-xs text-stone-500">Visitas</div>
         </Link>
       </div>
 
-      <div className="mt-5 rounded-xl bg-neutral-50 px-4 py-3 text-sm">
+      <div className="mt-5 rounded-xl bg-stone-50 px-4 py-3 text-sm">
         <div className="font-medium">Privacidad de tus reseñas nuevas</div>
-        <p className="mt-1 text-neutral-600">
+        <p className="mt-1 text-stone-600">
           Las ve: {AUDIENCE_LABELS[audience].toLowerCase()}.{" "}
           {pools ? "Tu nota cuenta en la media general del sitio, sin tu nombre." : "No cuentan en la media general."}
         </p>
-        <Link href="/me/edit" className="mt-1 inline-block text-xs text-blue-600">
+        <Link href="/me/edit" className="mt-1 inline-block text-xs text-accent">
           Cambiar
         </Link>
       </div>
 
       <div className="mt-6 flex flex-col gap-2">
-        <Link href="/visits/mine" className="rounded-lg border border-neutral-200 px-4 py-3 text-sm font-medium">
+        <Link href="/people" className="rounded-lg border border-stone-200 px-4 py-3 text-sm font-medium">
+          Buscar gente →
+        </Link>
+        <Link href="/visits/mine" className="rounded-lg border border-stone-200 px-4 py-3 text-sm font-medium">
           Mis visitas →
         </Link>
         <form action={signOut}>
-          <button className="w-full rounded-lg border border-neutral-200 px-4 py-3 text-left text-sm text-neutral-500">
+          <button className="w-full rounded-lg border border-stone-200 px-4 py-3 text-left text-sm text-stone-500">
             Cerrar sesión
           </button>
         </form>

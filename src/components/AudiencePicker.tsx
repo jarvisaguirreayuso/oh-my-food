@@ -39,7 +39,7 @@ export function AudiencePicker({
           <label
             key={o.value}
             className={`flex cursor-pointer items-start gap-3 rounded-lg border px-3 py-2 ${
-              audience === o.value ? "border-neutral-900 bg-neutral-50" : "border-neutral-200"
+              audience === o.value ? "border-accent bg-stone-50" : "border-stone-200"
             }`}
           >
             <input
@@ -52,14 +52,14 @@ export function AudiencePicker({
             />
             <span>
               <span className="block text-sm font-medium">{o.label}</span>
-              <span className="block text-xs text-neutral-500">{o.hint}</span>
+              <span className="block text-xs text-stone-500">{o.hint}</span>
             </span>
           </label>
         ))}
       </div>
       <label
         className={`flex items-start gap-3 rounded-lg px-3 py-2 text-sm ${
-          audience === "private" ? "text-neutral-400" : ""
+          audience === "private" ? "text-stone-400" : ""
         }`}
       >
         <input

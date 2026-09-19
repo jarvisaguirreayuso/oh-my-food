@@ -22,7 +22,7 @@ export function StarInput({
           onClick={() => onChange(value === n && optional ? null : n)}
           className="p-1 text-2xl leading-none"
         >
-          <span className={value !== null && n <= value ? "text-amber-500" : "text-neutral-300"}>
+          <span className={value !== null && n <= value ? "text-amber-500" : "text-stone-300"}>
             ★
           </span>
         </button>
@@ -31,7 +31,7 @@ export function StarInput({
         <button
           type="button"
           onClick={() => onChange(null)}
-          className="ml-1 text-xs text-neutral-400 underline"
+          className="ml-1 text-xs text-stone-400 underline"
         >
           quitar
         </button>

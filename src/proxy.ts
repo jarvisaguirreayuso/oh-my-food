@@ -4,7 +4,7 @@ import { NextResponse, type NextRequest } from "next/server";
 // Routes that need a session. Places, dishes and their general averages are
 // public (docs/plan-fase-2-social.md, B.9 #3 a); anything personal or social
 // (visits, profiles, people, writing) needs an account.
-const PROTECTED_PREFIXES = ["/visits", "/places/new", "/me", "/u", "/people"];
+const PROTECTED_PREFIXES = ["/visits", "/places/new", "/me", "/u", "/people", "/lists"];
 
 function requiresSession(pathname: string) {
   return PROTECTED_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`));

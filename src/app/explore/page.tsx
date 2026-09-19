@@ -31,15 +31,15 @@ export default async function ExplorePage({
           name="q"
           defaultValue={q}
           placeholder="Buscar sitios…"
-          className="flex-1 rounded-lg border border-neutral-300 px-4 py-3 text-base outline-none focus:border-neutral-900"
+          className="flex-1 rounded-lg border border-stone-300 px-4 py-3 text-base outline-none focus:border-accent"
         />
-        <button className="rounded-lg bg-neutral-900 px-4 py-3 text-sm font-medium text-white">Buscar</button>
+        <button className="rounded-lg bg-accent px-4 py-3 text-sm font-medium text-white">Buscar</button>
       </form>
 
       <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-lg font-semibold">{q ? `Resultados para “${q}”` : "Últimos sitios"}</h1>
+        <h1 className="font-display text-lg font-semibold">{q ? `Resultados para “${q}”` : "Últimos sitios"}</h1>
         {user && (
-          <Link href="/places/new" className="text-sm font-medium text-blue-600">
+          <Link href="/places/new" className="text-sm font-medium text-accent">
             + Nuevo sitio
           </Link>
         )}

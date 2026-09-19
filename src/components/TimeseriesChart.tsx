@@ -73,7 +73,7 @@ export function TimeseriesChart({
               return (
                 <div className="rounded-md border bg-white px-3 py-2 text-xs shadow">
                   <div className="font-medium">{label}</div>
-                  <div className="text-neutral-500">n = {n ?? 0}</div>
+                  <div className="text-stone-500">n = {n ?? 0}</div>
                   {payload.map((p) => (
                     <div key={p.dataKey as string} style={{ color: p.color }}>
                       {p.name}: {typeof p.value === "number" ? p.value.toFixed(2) : p.value ?? "—"}

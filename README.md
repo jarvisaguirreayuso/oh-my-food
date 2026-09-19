@@ -14,7 +14,7 @@ comparison, an up/down/stable trend, and a chart of the metric over time.
 - **Supabase**: Postgres + Auth (magic link) + Row Level Security
 - `@supabase/ssr` for cookie-based session handling
 - **Recharts** for the timeseries charts
-- **Leaflet + OpenStreetMap** (Nominatim for geocoding at place-creation time only, respecting the 1 req/s usage policy) — Phase 2
+- **Leaflet + OpenStreetMap** for the map. Tiles come from the public OSM server: free and keyless, fine for a closed beta, but its usage policy doesn't allow heavy production traffic, so switch to a keyed provider before launching. Nominatim geocoding runs only at place-creation time (1 req/s policy); address autocomplete would break that policy and needs a paid geocoder, so it is not built.
 - **zod** for input validation, shared between client forms and Server Actions
 
 All temporal metrics (moving averages, trend direction, recent-vs-historical
@@ -41,6 +41,7 @@ supabase/
 tests/
   rls.test.ts             RLS policy and privilege tests (vitest, hits local stack)
   social.test.ts          Privacy leak battery: audiences, follows, general scores
+  lists.test.ts           Saved places and lists are private to their owner
   trends.test.ts          Trend/timeseries RPC tests (vitest, hits local stack)
 ```
 
@@ -61,6 +62,9 @@ tests/
   Each visit has an `audience` (`public` / `followers` / `mutuals` /
   `private`) and `pools_publicly` (whether its rating also counts, nameless,
   in the place's general average).
+- `saved_places` ("quiero ir", a state) and `place_lists` / `place_list_items`
+  (themed collections) — two separate concepts so the map can filter by state
+  and by collection independently. Private to their owner (no sharing yet).
 - `dish_reviews` — belong to a visit; unique per `(visit_id, dish_id)`;
   `idea`/`execution`/`flavor` (1-5), `would_repeat` (bool), optional comment.
   A trigger enforces that the reviewed dish actually belongs to the visit's
@@ -187,7 +191,7 @@ supabase start && supabase db reset   # local stack must be up and seeded
 npm test
 ```
 
-`tests/rls.test.ts`, `tests/social.test.ts` and `tests/trends.test.ts` are integration tests that
+`tests/rls.test.ts`, `tests/social.test.ts`, `tests/lists.test.ts` and `tests/trends.test.ts` are integration tests that
 hit the local stack directly (see `tests/README.md`) — they sign in as the
 seed users and assert RLS blocks cross-user writes, and assert the trend/
 timeseries RPCs correctly classify the seed's known improving/declining/
@@ -218,12 +222,28 @@ deploys on push to `main`. Required environment variables (Project Settings
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 
+## Design tokens
+
+Colors come from the warm Tailwind `stone` scale plus the `accent` token
+(`src/app/globals.css`, `@theme`). Green and red are reserved for trend
+semantics and errors. Titles use the `font-display` serif (Fraunces). Don't put
+literal colors in components: the (still pending) dark theme only has to remap
+the tokens. The app is light-only until then.
+
 ## Roadmap
 
-- **Phase 1 (this MVP)**: auth, place CRUD + fuzzy search, dishes,
-  "Registrar visita" flow, place/dish pages with recent/historical figures +
-  trend + charts, "Mis visitas" (history, edit, delete).
-- **Phase 2**: map view (Leaflet/OSM), dish photos (Supabase Storage), place
-  type filters, "repeaters" delta metric (≥3 users who repeated a dish).
-- **Phase 3**: duplicate place/dish reporting + merging, city/dish rankings,
-  PWA, materialized views + `pg_cron` if performance requires it.
+Done: auth (magic link + password sign-in), places/dishes, visits with
+audiences, temporal metrics, profiles, directed follows, feed, general
+averages for anonymous visitors, saved places, private lists, map, first
+recommendations ("popular among people you follow"), warm visual system,
+robots.txt. See `docs/plan-fase-2-social.md` for the rationale.
+
+Next, and postponed because it needs a paid service or an open product
+decision:
+
+- Paid map tiles and address autocomplete (keyed provider).
+- Transactional email on a verified domain, so friends can sign in by magic
+  link without Supabase's low built-in email limit.
+- Recommendations by proximity ("near you and well rated"), lists shared with
+  followers, anonymous reviews (B.9 #2), dark theme (F7), dish photos
+  (Supabase Storage), duplicate place/dish merging, PWA.

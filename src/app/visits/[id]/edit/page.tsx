@@ -23,7 +23,7 @@ export default async function EditVisitPage({ params }: { params: Promise<{ id: 
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-6">
-      <h1 className="mb-4 text-xl font-semibold">Editar visita</h1>
+      <h1 className="font-display mb-4 text-xl font-semibold">Editar visita</h1>
       <EditVisitForm visit={visit} />
     </div>
   );

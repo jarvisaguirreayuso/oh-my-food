@@ -28,11 +28,11 @@ export default async function EditProfilePage({
     <div className="mx-auto max-w-2xl px-4 py-6">
       {welcome || provisional ? (
         <div className="mb-5">
-          <h1 className="text-xl font-semibold">Bienvenido 👋</h1>
-          <p className="mt-1 text-sm text-neutral-500">Elige cómo quieres que te vea la gente.</p>
+          <h1 className="font-display text-xl font-semibold">Bienvenido 👋</h1>
+          <p className="mt-1 text-sm text-stone-500">Elige cómo quieres que te vea la gente.</p>
         </div>
       ) : (
-        <h1 className="mb-5 text-xl font-semibold">Editar perfil</h1>
+        <h1 className="font-display mb-5 text-xl font-semibold">Editar perfil</h1>
       )}
       <ProfileForm
         username={provisional ? "" : profile.username}

@@ -54,7 +54,7 @@ export function NewVisitForm({
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-6">
-      <h1 className="mb-4 text-xl font-semibold">Registrar visita</h1>
+      <h1 className="font-display mb-4 text-xl font-semibold">Registrar visita</h1>
 
       {!place ? (
         <div>
@@ -65,11 +65,11 @@ export function NewVisitForm({
         <form action={formAction} className="flex flex-col gap-6">
           <input type="hidden" name="payload" value={payload} />
 
-          <div className="rounded-lg bg-neutral-50 px-4 py-3">
-            <div className="text-sm text-neutral-500">Sitio</div>
+          <div className="rounded-lg bg-stone-50 px-4 py-3">
+            <div className="text-sm text-stone-500">Sitio</div>
             <div className="flex items-center justify-between">
               <div className="font-medium">{place.name}</div>
-              <button type="button" className="text-xs text-blue-600" onClick={() => setPlace(null)}>
+              <button type="button" className="text-xs text-accent" onClick={() => setPlace(null)}>
                 cambiar
               </button>
             </div>
@@ -82,7 +82,7 @@ export function NewVisitForm({
               value={visitedOn}
               max={todayISO()}
               onChange={(e) => setVisitedOn(e.target.value)}
-              className="rounded-lg border border-neutral-300 px-4 py-3 text-base outline-none focus:border-neutral-900"
+              className="rounded-lg border border-stone-300 px-4 py-3 text-base outline-none focus:border-accent"
             />
           </label>
 
@@ -94,7 +94,7 @@ export function NewVisitForm({
               onChange={(e) => setPlaceComment(e.target.value)}
               placeholder="Comentario sobre el sitio (opcional)"
               rows={2}
-              className="mt-2 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-neutral-900"
+              className="mt-2 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm outline-none focus:border-accent"
             />
           </div>
 
@@ -103,7 +103,7 @@ export function NewVisitForm({
               <p className="text-sm font-medium">Platos</p>
               <button
                 type="button"
-                className="text-sm font-medium text-blue-600"
+                className="text-sm font-medium text-accent"
                 onClick={() => setDishes((d) => [...d, emptyDish()])}
               >
                 + Añadir plato
@@ -120,7 +120,7 @@ export function NewVisitForm({
                 />
               ))}
               {dishes.length === 0 && (
-                <p className="text-sm text-neutral-400">
+                <p className="text-sm text-stone-400">
                   Puedes guardar la visita solo con la valoración del sitio, o añadir platos.
                 </p>
               )}
@@ -130,7 +130,7 @@ export function NewVisitForm({
           <div>
             <p className="mb-2 text-sm font-medium">¿Quién puede ver esta reseña?</p>
             <AudiencePicker initial={privacy} onChange={setPrivacy} />
-            <p className="mt-2 text-xs text-neutral-400">
+            <p className="mt-2 text-xs text-stone-400">
               Puedes cambiar tus valores por defecto en tu perfil.
             </p>
           </div>
@@ -138,7 +138,7 @@ export function NewVisitForm({
           <button
             type="submit"
             disabled={pending}
-            className="rounded-lg bg-neutral-900 px-4 py-3 font-medium text-white disabled:opacity-50"
+            className="rounded-lg bg-accent px-4 py-3 font-medium text-white disabled:opacity-50"
           >
             {pending ? "Guardando…" : "Guardar visita"}
           </button>

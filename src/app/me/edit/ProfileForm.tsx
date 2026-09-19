@@ -22,14 +22,14 @@ export function ProfileForm({
 }) {
   const [state, formAction, pending] = useActionState(updateProfile, initialState);
   const input =
-    "w-full rounded-lg border border-neutral-300 px-4 py-3 text-base outline-none focus:border-neutral-900";
+    "w-full rounded-lg border border-stone-300 px-4 py-3 text-base outline-none focus:border-accent";
 
   return (
     <form action={formAction} className="flex flex-col gap-5">
       <label className="flex flex-col gap-1 text-sm font-medium">
         Nombre de usuario
-        <div className="flex items-center rounded-lg border border-neutral-300 focus-within:border-neutral-900">
-          <span className="pl-4 text-neutral-400">@</span>
+        <div className="flex items-center rounded-lg border border-stone-300 focus-within:border-accent">
+          <span className="pl-4 text-stone-400">@</span>
           <input
             name="username"
             defaultValue={username}
@@ -42,7 +42,7 @@ export function ProfileForm({
             className="w-full rounded-lg px-2 py-3 text-base outline-none"
           />
         </div>
-        <span className="text-xs font-normal text-neutral-400">
+        <span className="text-xs font-normal text-stone-400">
           3-20 caracteres: letras minúsculas, números o _. Aparece en tu perfil y en tus reseñas.
         </span>
       </label>
@@ -64,7 +64,7 @@ export function ProfileForm({
           audienceName="defaultAudience"
           poolsName="defaultPoolsPublicly"
         />
-        <p className="mt-2 text-xs text-neutral-400">
+        <p className="mt-2 text-xs text-stone-400">
           Puedes cambiarlo en cada reseña. Sin cuenta, nadie ve reseñas sueltas: solo las medias generales.
         </p>
       </div>
@@ -72,7 +72,7 @@ export function ProfileForm({
       <button
         type="submit"
         disabled={pending}
-        className="rounded-lg bg-neutral-900 px-4 py-3 font-medium text-white disabled:opacity-50"
+        className="rounded-lg bg-accent px-4 py-3 font-medium text-white disabled:opacity-50"
       >
         {pending ? "Guardando…" : "Guardar"}
       </button>

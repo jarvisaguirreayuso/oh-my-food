@@ -166,6 +166,68 @@ export type Database = {
           },
         ]
       }
+      place_list_items: {
+        Row: {
+          added_at: string
+          list_id: string
+          place_id: string
+        }
+        Insert: {
+          added_at?: string
+          list_id: string
+          place_id: string
+        }
+        Update: {
+          added_at?: string
+          list_id?: string
+          place_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "place_list_items_list_id_fkey"
+            columns: ["list_id"]
+            isOneToOne: false
+            referencedRelation: "place_lists"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "place_list_items_place_id_fkey"
+            columns: ["place_id"]
+            isOneToOne: false
+            referencedRelation: "places"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      place_lists: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          owner_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          owner_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          owner_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "place_lists_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       places: {
         Row: {
           address: string | null
@@ -265,6 +327,42 @@ export type Database = {
           username?: string
         }
         Relationships: []
+      }
+      saved_places: {
+        Row: {
+          note: string | null
+          place_id: string
+          saved_at: string
+          user_id: string
+        }
+        Insert: {
+          note?: string | null
+          place_id: string
+          saved_at?: string
+          user_id: string
+        }
+        Update: {
+          note?: string | null
+          place_id?: string
+          saved_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saved_places_place_id_fkey"
+            columns: ["place_id"]
+            isOneToOne: false
+            referencedRelation: "places"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "saved_places_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       visits: {
         Row: {

@@ -21,33 +21,33 @@ export default async function MyVisitsPage() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-6">
-      <h1 className="mb-4 text-xl font-semibold">Mis visitas</h1>
+      <h1 className="font-display mb-4 text-xl font-semibold">Mis visitas</h1>
       <ul className="flex flex-col gap-3">
         {visits?.map((v) => (
-          <li key={v.id} className="rounded-xl border border-neutral-200 p-4">
+          <li key={v.id} className="rounded-xl border border-stone-200 p-4">
             <div className="flex items-start justify-between">
               <div>
-                <Link href={`/places/${v.places?.id}`} className="font-medium text-blue-600">
+                <Link href={`/places/${v.places?.id}`} className="font-medium text-accent">
                   {v.places?.name}
                 </Link>
-                <div className="text-xs text-neutral-500">
+                <div className="text-xs text-stone-500">
                   {v.visited_on} · {AUDIENCE_LABELS[v.audience]}
                   {v.pools_publicly ? " · cuenta en la media" : ""}
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <Link href={`/visits/${v.id}/edit`} className="text-xs text-neutral-500">
+                <Link href={`/visits/${v.id}/edit`} className="text-xs text-stone-500">
                   editar
                 </Link>
                 <DeleteButton visitId={v.id} />
               </div>
             </div>
             {v.place_rating && <div className="mt-1 text-sm">{"★".repeat(v.place_rating)}</div>}
-            {v.place_comment && <p className="mt-1 text-sm text-neutral-700">{v.place_comment}</p>}
+            {v.place_comment && <p className="mt-1 text-sm text-stone-700">{v.place_comment}</p>}
             {v.dish_reviews.length > 0 && (
               <ul className="mt-2 flex flex-col gap-1 border-t pt-2 text-sm">
                 {v.dish_reviews.map((dr) => (
-                  <li key={dr.id} className="text-neutral-600">
+                  <li key={dr.id} className="text-stone-600">
                     {dr.dishes?.name}: idea {dr.idea}, ejecución {dr.execution}, sabor {dr.flavor}
                     {dr.would_repeat ? " · repetiría" : " · no repetiría"}
                   </li>
@@ -57,9 +57,9 @@ export default async function MyVisitsPage() {
           </li>
         ))}
         {(!visits || visits.length === 0) && (
-          <p className="py-8 text-center text-sm text-neutral-400">
+          <p className="py-8 text-center text-sm text-stone-400">
             Todavía no has registrado ninguna visita.{" "}
-            <Link href="/visits/new" className="text-blue-600">
+            <Link href="/visits/new" className="text-accent">
               Registra la primera
             </Link>
             .

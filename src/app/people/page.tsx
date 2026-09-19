@@ -46,7 +46,7 @@ export default async function PeoplePage({
   }
 
   const tabClass = (active: boolean) =>
-    `rounded-full px-3 py-1.5 text-sm ${active ? "bg-neutral-900 text-white" : "bg-neutral-100"}`;
+    `rounded-full px-3 py-1.5 text-sm ${active ? "bg-accent text-white" : "bg-stone-100"}`;
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-6">
@@ -57,13 +57,13 @@ export default async function PeoplePage({
           defaultValue={q}
           placeholder="Buscar gente por nombre de usuario…"
           autoCapitalize="none"
-          className="flex-1 rounded-lg border border-neutral-300 px-4 py-3 text-base outline-none focus:border-neutral-900"
+          className="flex-1 rounded-lg border border-stone-300 px-4 py-3 text-base outline-none focus:border-accent"
         />
-        <button className="rounded-lg bg-neutral-900 px-4 py-3 text-sm font-medium text-white">Buscar</button>
+        <button className="rounded-lg bg-accent px-4 py-3 text-sm font-medium text-white">Buscar</button>
       </form>
 
       {q ? (
-        <h1 className="mb-3 text-sm font-semibold">Resultados para “{q}”</h1>
+        <h1 className="font-display mb-3 text-sm font-semibold">Resultados para “{q}”</h1>
       ) : (
         <div className="mb-3 flex gap-2">
           <Link href="/people?tab=following" className={tabClass(tab === "following")}>
@@ -77,10 +77,10 @@ export default async function PeoplePage({
 
       <ul className="flex flex-col gap-2">
         {people.map((p) => (
-          <li key={p.id} className="flex items-center justify-between gap-3 rounded-lg border border-neutral-200 px-4 py-3">
+          <li key={p.id} className="flex items-center justify-between gap-3 rounded-lg border border-stone-200 px-4 py-3">
             <Link href={`/u/${p.username}`} className="min-w-0">
               <div className="truncate font-medium">{p.display_name || `@${p.username}`}</div>
-              <div className="truncate text-sm text-neutral-500">
+              <div className="truncate text-sm text-stone-500">
                 {p.display_name ? `@${p.username}` : (p.bio ?? "")}
                 {followerIds.has(p.id) && followingIds.has(p.id) ? " · amigos" : followerIds.has(p.id) ? " · te sigue" : ""}
               </div>
@@ -89,7 +89,7 @@ export default async function PeoplePage({
           </li>
         ))}
         {people.length === 0 && (
-          <p className="py-8 text-center text-sm text-neutral-400">
+          <p className="py-8 text-center text-sm text-stone-400">
             {q
               ? "No hay nadie con ese nombre."
               : tab === "followers"

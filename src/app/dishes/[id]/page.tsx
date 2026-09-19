@@ -32,15 +32,15 @@ export default async function DishDetailPage({
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-6">
-      <p className="text-sm text-neutral-500">
-        <Link href={`/places/${dish.places?.id}`} className="text-blue-600">
+      <p className="text-sm text-stone-500">
+        <Link href={`/places/${dish.places?.id}`} className="text-accent">
           {dish.places?.name}
         </Link>
       </p>
-      <h1 className="mb-4 text-2xl font-bold">{dish.name}</h1>
+      <h1 className="font-display mb-4 text-2xl font-bold">{dish.name}</h1>
 
-      <div className="rounded-xl border border-neutral-200 p-4">
-        <div className="mb-2 text-sm font-medium text-neutral-700">
+      <div className="rounded-xl border border-stone-200 p-4">
+        <div className="mb-2 text-sm font-medium text-stone-700">
           Media general{general ? ` · ${general.n} ${general.n === 1 ? "reseña" : "reseñas"}` : ""}
         </div>
         {general ? (
@@ -53,27 +53,27 @@ export default async function DishDetailPage({
             ].map((m) => (
               <div key={m.label}>
                 <div className="text-xl font-bold">{m.value ?? "—"}</div>
-                <div className="text-[11px] text-neutral-500">{m.label}</div>
+                <div className="text-[11px] text-stone-500">{m.label}</div>
               </div>
             ))}
           </div>
         ) : (
-          <p className="text-sm text-neutral-400">Todavía sin reseñas de este plato.</p>
+          <p className="text-sm text-stone-400">Todavía sin reseñas de este plato.</p>
         )}
-        <p className="mt-2 text-xs text-neutral-400">Suma las reseñas que la gente ha querido contar, sin nombres.</p>
+        <p className="mt-2 text-xs text-stone-400">Suma las reseñas que la gente ha querido contar, sin nombres.</p>
       </div>
 
       {user ? (
         <SignedInSections dishId={id} granularity={granularity} />
       ) : (
-        <div className="mt-6 rounded-xl bg-neutral-50 px-4 py-4">
+        <div className="mt-6 rounded-xl bg-stone-50 px-4 py-4">
           <p className="font-medium">Mira la evolución y lo que opina tu gente</p>
-          <p className="mt-1 text-sm text-neutral-500">
+          <p className="mt-1 text-sm text-stone-500">
             Con una cuenta ves cómo cambia este plato con el tiempo y las reseñas de quien sigues.
           </p>
           <Link
             href="/auth/login"
-            className="mt-3 inline-block rounded-lg bg-neutral-900 px-4 py-2 text-sm font-medium text-white"
+            className="mt-3 inline-block rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white"
           >
             Entrar
           </Link>
@@ -126,14 +126,14 @@ async function SignedInSections({ dishId, granularity }: { dishId: string; granu
           { label: "Sabor", recent: stats?.recent_flavor, hist: stats?.historical_flavor },
           { label: "% Repetiría", recent: stats?.recent_repeat_pct, hist: stats?.historical_repeat_pct },
         ].map((m) => (
-          <div key={m.label} className="rounded-xl border border-neutral-200 p-3 text-center">
+          <div key={m.label} className="rounded-xl border border-stone-200 p-3 text-center">
             <div className="text-xl font-bold">{m.recent ?? "—"}</div>
-            <div className="text-[11px] text-neutral-500">{m.label} (reciente)</div>
-            <div className="mt-1 text-xs text-neutral-400">hist. {m.hist ?? "—"}</div>
+            <div className="text-[11px] text-stone-500">{m.label} (reciente)</div>
+            <div className="mt-1 text-xs text-stone-400">hist. {m.hist ?? "—"}</div>
           </div>
         ))}
       </div>
-      <p className="mt-1 text-xs text-neutral-400">
+      <p className="mt-1 text-xs text-stone-400">
         n reciente: {stats?.recent_n ?? 0} · n histórico: {stats?.historical_n ?? 0}
       </p>
 
@@ -143,13 +143,13 @@ async function SignedInSections({ dishId, granularity }: { dishId: string; granu
           <div className="flex gap-1 text-xs">
             <Link
               href={`?granularity=month`}
-              className={`rounded-full px-2 py-1 ${granularity === "month" ? "bg-neutral-900 text-white" : "bg-neutral-100"}`}
+              className={`rounded-full px-2 py-1 ${granularity === "month" ? "bg-accent text-white" : "bg-stone-100"}`}
             >
               Mensual
             </Link>
             <Link
               href={`?granularity=quarter`}
-              className={`rounded-full px-2 py-1 ${granularity === "quarter" ? "bg-neutral-900 text-white" : "bg-neutral-100"}`}
+              className={`rounded-full px-2 py-1 ${granularity === "quarter" ? "bg-accent text-white" : "bg-stone-100"}`}
             >
               Trimestral
             </Link>
@@ -161,25 +161,25 @@ async function SignedInSections({ dishId, granularity }: { dishId: string; granu
             <TimeseriesChart
               data={timeseries}
               series={[
-                { key: "avg_idea", movingAvgKey: "moving_avg_idea", label: "Idea", color: "#2563eb" },
-                { key: "avg_execution", movingAvgKey: "moving_avg_execution", label: "Ejecución", color: "#16a34a" },
-                { key: "avg_flavor", movingAvgKey: "moving_avg_flavor", label: "Sabor", color: "#dc2626" },
+                { key: "avg_idea", movingAvgKey: "moving_avg_idea", label: "Idea", color: "#0369a1" },
+                { key: "avg_execution", movingAvgKey: "moving_avg_execution", label: "Ejecución", color: "#b45309" },
+                { key: "avg_flavor", movingAvgKey: "moving_avg_flavor", label: "Sabor", color: "#c2410c" },
               ]}
               yDomain={[1, 5]}
             />
             <div>
-              <h3 className="mb-2 text-xs font-medium text-neutral-500">% Repetiría</h3>
+              <h3 className="mb-2 text-xs font-medium text-stone-500">% Repetiría</h3>
               <TimeseriesChart
                 data={timeseries}
                 series={[
-                  { key: "repeat_pct", movingAvgKey: "moving_avg_repeat_pct", label: "% Repetiría", color: "#9333ea" },
+                  { key: "repeat_pct", movingAvgKey: "moving_avg_repeat_pct", label: "% Repetiría", color: "#6d28d9" },
                 ]}
                 yDomain={[0, 100]}
               />
             </div>
           </div>
         ) : (
-          <p className="text-sm text-neutral-400">Todavía no hay suficientes reseñas que puedas ver de este plato.</p>
+          <p className="text-sm text-stone-400">Todavía no hay suficientes reseñas que puedas ver de este plato.</p>
         )}
       </div>
 
@@ -189,10 +189,10 @@ async function SignedInSections({ dishId, granularity }: { dishId: string; granu
           {reviews?.map((r) => {
             const author = r.visits?.profiles;
             return (
-              <li key={r.id} className="rounded-lg border border-neutral-200 px-4 py-3">
-                <div className="flex items-center justify-between text-xs text-neutral-500">
+              <li key={r.id} className="rounded-lg border border-stone-200 px-4 py-3">
+                <div className="flex items-center justify-between text-xs text-stone-500">
                   {author ? (
-                    <Link href={`/u/${author.username}`} className="font-medium text-neutral-800">
+                    <Link href={`/u/${author.username}`} className="font-medium text-stone-800">
                       {author.display_name || `@${author.username}`}
                     </Link>
                   ) : (
@@ -204,12 +204,12 @@ async function SignedInSections({ dishId, granularity }: { dishId: string; granu
                   Idea {r.idea} · Ejecución {r.execution} · Sabor {r.flavor} ·{" "}
                   {r.would_repeat ? "repetiría" : "no repetiría"}
                 </div>
-                {r.comment && <p className="mt-1 text-sm text-neutral-700">{r.comment}</p>}
+                {r.comment && <p className="mt-1 text-sm text-stone-700">{r.comment}</p>}
               </li>
             );
           })}
           {(!reviews || reviews.length === 0) && (
-            <p className="text-sm text-neutral-400">Todavía no hay reseñas que puedas ver de este plato.</p>
+            <p className="text-sm text-stone-400">Todavía no hay reseñas que puedas ver de este plato.</p>
           )}
         </ul>
       </div>

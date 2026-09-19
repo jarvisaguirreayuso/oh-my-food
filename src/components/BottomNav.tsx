@@ -5,9 +5,9 @@ import { usePathname } from "next/navigation";
 
 const ITEMS = [
   { href: "/", label: "Inicio", icon: "🏠" },
-  { href: "/explore", label: "Buscar", icon: "🔍" },
+  { href: "/map", label: "Mapa", icon: "🗺️" },
   { href: "/visits/new", label: "Registrar", icon: "＋", primary: true },
-  { href: "/people", label: "Gente", icon: "👥" },
+  { href: "/lists", label: "Listas", icon: "🔖" },
   { href: "/me", label: "Perfil", icon: "🙂" },
 ];
 
@@ -24,11 +24,11 @@ export function BottomNav() {
               href={item.href}
               aria-current={isActive(item.href) ? "page" : undefined}
               className={`flex min-w-14 flex-col items-center gap-0.5 rounded-lg px-2 py-1 text-[11px] ${
-                isActive(item.href) ? "font-semibold text-neutral-900" : "text-neutral-500"
+                isActive(item.href) ? "font-semibold text-stone-900" : "text-stone-500"
               }`}
             >
               {item.primary ? (
-                <span className="-mt-3 flex h-11 w-11 items-center justify-center rounded-full bg-neutral-900 text-2xl leading-none text-white shadow">
+                <span className="-mt-3 flex h-11 w-11 items-center justify-center rounded-full bg-accent text-2xl leading-none text-white shadow">
                   {item.icon}
                 </span>
               ) : (

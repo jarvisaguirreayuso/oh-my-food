@@ -41,23 +41,23 @@ export default async function UserProfilePage({ params }: { params: Promise<{ us
     <div className="mx-auto max-w-2xl px-4 py-6">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold">{profile.display_name || `@${profile.username}`}</h1>
-          {profile.display_name && <p className="text-sm text-neutral-500">@{profile.username}</p>}
+          <h1 className="font-display text-2xl font-bold">{profile.display_name || `@${profile.username}`}</h1>
+          {profile.display_name && <p className="text-sm text-stone-500">@{profile.username}</p>}
           {!isMe && (followsMe.data || mutual) && (
-            <span className="mt-1 inline-block rounded-full bg-neutral-100 px-2 py-0.5 text-xs text-neutral-600">
+            <span className="mt-1 inline-block rounded-full bg-stone-100 px-2 py-0.5 text-xs text-stone-600">
               {mutual ? "Amigos (os seguís)" : "Te sigue"}
             </span>
           )}
         </div>
         {isMe ? (
-          <Link href="/me/edit" className="rounded-full border border-neutral-300 px-4 py-1.5 text-sm font-medium">
+          <Link href="/me/edit" className="rounded-full border border-stone-300 px-4 py-1.5 text-sm font-medium">
             Editar perfil
           </Link>
         ) : (
           <FollowButton userId={profile.id} following={following} />
         )}
       </div>
-      {profile.bio && <p className="mt-3 text-sm text-neutral-700">{profile.bio}</p>}
+      {profile.bio && <p className="mt-3 text-sm text-stone-700">{profile.bio}</p>}
 
       <h2 className="mb-2 mt-8 text-sm font-semibold">Visitas</h2>
       {visits && visits.length > 0 ? (
@@ -67,7 +67,7 @@ export default async function UserProfilePage({ params }: { params: Promise<{ us
           ))}
         </ul>
       ) : (
-        <p className="rounded-xl border border-dashed border-neutral-300 px-4 py-8 text-center text-sm text-neutral-500">
+        <p className="rounded-xl border border-dashed border-stone-300 px-4 py-8 text-center text-sm text-stone-500">
           {isMe
             ? "Todavía no has registrado visitas."
             : following

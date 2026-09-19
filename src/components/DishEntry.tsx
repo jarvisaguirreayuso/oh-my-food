@@ -47,14 +47,14 @@ export function DishEntry({
   const visibleSuggestions = searchActive ? suggestions : [];
 
   return (
-    <div className="rounded-xl border border-neutral-200 p-4">
+    <div className="rounded-xl border border-stone-200 p-4">
       <div className="mb-3 flex items-start justify-between gap-2">
         {value.dishId ? (
           <div className="flex-1">
             <div className="font-medium">{value.dishName}</div>
             <button
               type="button"
-              className="text-xs text-blue-600"
+              className="text-xs text-accent"
               onClick={() => onChange({ ...value, dishId: null, dishName: null })}
             >
               cambiar plato
@@ -69,7 +69,7 @@ export function DishEntry({
                 onChange({ ...value, dishName: e.target.value });
               }}
               placeholder="Nombre del plato…"
-              className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-neutral-900"
+              className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm outline-none focus:border-accent"
             />
             {visibleSuggestions.length > 0 && (
               <div className="mt-1 rounded-lg border border-amber-200 bg-amber-50 p-2">
@@ -94,7 +94,7 @@ export function DishEntry({
             )}
           </div>
         )}
-        <button type="button" onClick={onRemove} className="text-sm text-neutral-400">
+        <button type="button" onClick={onRemove} className="text-sm text-stone-400">
           quitar
         </button>
       </div>
@@ -114,12 +114,12 @@ export function DishEntry({
       </div>
 
       <div className="mt-3 flex items-center gap-2">
-        <span className="text-xs font-medium text-neutral-600">¿Lo repetirías?</span>
+        <span className="text-xs font-medium text-stone-600">¿Lo repetirías?</span>
         <button
           type="button"
           onClick={() => onChange({ ...value, wouldRepeat: true })}
           className={`rounded-full px-3 py-1 text-xs font-medium ${
-            value.wouldRepeat ? "bg-green-600 text-white" : "bg-neutral-100 text-neutral-500"
+            value.wouldRepeat ? "bg-green-600 text-white" : "bg-stone-100 text-stone-500"
           }`}
         >
           Sí
@@ -128,7 +128,7 @@ export function DishEntry({
           type="button"
           onClick={() => onChange({ ...value, wouldRepeat: false })}
           className={`rounded-full px-3 py-1 text-xs font-medium ${
-            !value.wouldRepeat ? "bg-red-600 text-white" : "bg-neutral-100 text-neutral-500"
+            !value.wouldRepeat ? "bg-red-600 text-white" : "bg-stone-100 text-stone-500"
           }`}
         >
           No
@@ -140,7 +140,7 @@ export function DishEntry({
         onChange={(e) => onChange({ ...value, comment: e.target.value })}
         placeholder="Comentario (opcional)"
         rows={2}
-        className="mt-3 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-neutral-900"
+        className="mt-3 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm outline-none focus:border-accent"
       />
     </div>
   );

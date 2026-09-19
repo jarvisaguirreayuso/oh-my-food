@@ -7,7 +7,7 @@ export function TrendBadge({
 }) {
   if (status === "insufficient_data") {
     return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-neutral-100 px-2 py-0.5 text-xs text-neutral-500">
+      <span className="inline-flex items-center gap-1 rounded-full bg-stone-100 px-2 py-0.5 text-xs text-stone-500">
         datos insuficientes
       </span>
     );
@@ -16,7 +16,7 @@ export function TrendBadge({
   const map = {
     up: { arrow: "▲", cls: "bg-green-50 text-green-700" },
     down: { arrow: "▼", cls: "bg-red-50 text-red-700" },
-    stable: { arrow: "●", cls: "bg-neutral-100 text-neutral-600" },
+    stable: { arrow: "●", cls: "bg-stone-100 text-stone-600" },
   } as const;
 
   const { arrow, cls } = map[status];

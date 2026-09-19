@@ -18,14 +18,14 @@ export default function NewPlacePage() {
 
   return (
     <div className="mx-auto max-w-md px-4 py-6">
-      <h1 className="mb-4 text-xl font-semibold">Nuevo sitio</h1>
+      <h1 className="font-display mb-4 text-xl font-semibold">Nuevo sitio</h1>
       <form action={formAction} className="flex flex-col gap-4">
         <label className="flex flex-col gap-1 text-sm font-medium">
           Nombre
           <input
             name="name"
             required
-            className="rounded-lg border border-neutral-300 px-4 py-3 text-base outline-none focus:border-neutral-900"
+            className="rounded-lg border border-stone-300 px-4 py-3 text-base outline-none focus:border-accent"
           />
         </label>
 
@@ -34,7 +34,7 @@ export default function NewPlacePage() {
           <select
             name="type"
             defaultValue="restaurant"
-            className="rounded-lg border border-neutral-300 px-4 py-3 text-base outline-none focus:border-neutral-900"
+            className="rounded-lg border border-stone-300 px-4 py-3 text-base outline-none focus:border-accent"
           >
             {TYPES.map((t) => (
               <option key={t.value} value={t.value}>
@@ -49,9 +49,9 @@ export default function NewPlacePage() {
           <input
             name="address"
             placeholder="Calle, ciudad…"
-            className="rounded-lg border border-neutral-300 px-4 py-3 text-base outline-none focus:border-neutral-900"
+            className="rounded-lg border border-stone-300 px-4 py-3 text-base outline-none focus:border-accent"
           />
-          <span className="text-xs font-normal text-neutral-400">
+          <span className="text-xs font-normal text-stone-400">
             La usamos para geolocalizar el sitio automáticamente (OpenStreetMap).
           </span>
         </label>
@@ -59,7 +59,7 @@ export default function NewPlacePage() {
         <button
           type="submit"
           disabled={pending}
-          className="rounded-lg bg-neutral-900 px-4 py-3 font-medium text-white disabled:opacity-50"
+          className="rounded-lg bg-accent px-4 py-3 font-medium text-white disabled:opacity-50"
         >
           {pending ? "Creando…" : "Crear sitio"}
         </button>

@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { TYPE_LABELS, getPlaceGeneralScores } from "@/lib/places";
 import { TrendBadge } from "@/components/TrendBadge";
 import { TimeseriesChart } from "@/components/TimeseriesChart";
+import { PlaceActions } from "@/components/PlaceActions";
 
 export default async function PlaceDetailPage({
   params,
@@ -27,12 +28,21 @@ export default async function PlaceDetailPage({
 
   const general = (await getPlaceGeneralScores(supabase, [id])).get(id);
 
+  // "Quiero ir" and the user's lists (all private to them, so RLS returns only their own).
+  const [saved, lists, memberships] = user
+    ? await Promise.all([
+        supabase.from("saved_places").select("place_id").eq("user_id", user.id).eq("place_id", id).maybeSingle(),
+        supabase.from("place_lists").select("id, name").order("name"),
+        supabase.from("place_list_items").select("list_id").eq("place_id", id),
+      ])
+    : [null, null, null];
+
   return (
     <div className="mx-auto max-w-2xl px-4 py-6">
       <div className="mb-2 flex items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold">{place.name}</h1>
-          <p className="text-sm text-neutral-500">
+          <h1 className="font-display text-2xl font-bold">{place.name}</h1>
+          <p className="text-sm text-stone-500">
             {TYPE_LABELS[place.type] ?? place.type}
             {place.address ? ` · ${place.address}` : ""}
           </p>
@@ -40,25 +50,34 @@ export default async function PlaceDetailPage({
         {user && (
           <Link
             href={`/visits/new?place=${place.id}`}
-            className="shrink-0 rounded-lg bg-neutral-900 px-3 py-2 text-xs font-medium text-white"
+            className="shrink-0 rounded-lg bg-accent px-3 py-2 text-xs font-medium text-white"
           >
             Registrar visita
           </Link>
         )}
       </div>
 
-      <div className="mt-4 rounded-xl border border-neutral-200 p-4">
+      <div className="mt-4 rounded-xl border border-stone-200 p-4">
         <div className="flex items-end gap-3">
           <div className="text-4xl font-bold">{general?.avg != null ? general.avg.toFixed(1) : "—"}</div>
-          <div className="pb-1 text-sm text-neutral-500">
-            <div className="font-medium text-neutral-700">Media general</div>
+          <div className="pb-1 text-sm text-stone-500">
+            <div className="font-medium text-stone-700">Media general</div>
             {general ? `${general.n} ${general.n === 1 ? "nota" : "notas"}` : "Todavía sin notas"}
           </div>
         </div>
-        <p className="mt-2 text-xs text-neutral-400">
+        <p className="mt-2 text-xs text-stone-400">
           Suma las notas que la gente ha querido contar, sin nombres.
         </p>
       </div>
+
+      {user && (
+        <PlaceActions
+          placeId={id}
+          saved={Boolean(saved?.data)}
+          lists={lists?.data ?? []}
+          memberOf={memberships?.data?.map((m) => m.list_id) ?? []}
+        />
+      )}
 
       {user ? <SignedInSections placeId={id} granularity={granularity} order={order} /> : <SignedOutSections placeId={id} />}
     </div>
@@ -71,14 +90,14 @@ async function SignedOutSections({ placeId }: { placeId: string }) {
 
   return (
     <>
-      <div className="mt-6 rounded-xl bg-neutral-50 px-4 py-4">
+      <div className="mt-6 rounded-xl bg-stone-50 px-4 py-4">
         <p className="font-medium">Mira la evolución y lo que opina tu gente</p>
-        <p className="mt-1 text-sm text-neutral-500">
+        <p className="mt-1 text-sm text-stone-500">
           Con una cuenta ves la tendencia del sitio, sus platos y las reseñas de quien sigues.
         </p>
         <Link
           href="/auth/login"
-          className="mt-3 inline-block rounded-lg bg-neutral-900 px-4 py-2 text-sm font-medium text-white"
+          className="mt-3 inline-block rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white"
         >
           Entrar
         </Link>
@@ -92,7 +111,7 @@ async function SignedOutSections({ placeId }: { placeId: string }) {
               <li key={d.id}>
                 <Link
                   href={`/dishes/${d.id}`}
-                  className="block rounded-lg border border-neutral-200 px-4 py-3 font-medium hover:border-neutral-400"
+                  className="block rounded-lg border border-stone-200 px-4 py-3 font-medium hover:border-stone-400"
                 >
                   {d.name}
                 </Link>
@@ -146,14 +165,14 @@ async function SignedInSections({
 
   return (
     <>
-      <div className="mt-4 flex items-end gap-4 rounded-xl border border-neutral-200 p-4">
+      <div className="mt-4 flex items-end gap-4 rounded-xl border border-stone-200 p-4">
         <div>
           <div className="text-4xl font-bold">{stats?.recent_avg ?? "—"}</div>
-          <div className="text-xs text-neutral-500">lo que ves tú · reciente (12 meses) · n={stats?.recent_n ?? 0}</div>
+          <div className="text-xs text-stone-500">lo que ves tú · reciente (12 meses) · n={stats?.recent_n ?? 0}</div>
         </div>
         <div>
-          <div className="text-lg font-medium text-neutral-500">{stats?.historical_avg ?? "—"}</div>
-          <div className="text-xs text-neutral-400">histórica · n={stats?.historical_n ?? 0}</div>
+          <div className="text-lg font-medium text-stone-500">{stats?.historical_avg ?? "—"}</div>
+          <div className="text-xs text-stone-400">histórica · n={stats?.historical_n ?? 0}</div>
         </div>
         {trend && <TrendBadge status={trend.status as never} delta={trend.delta} />}
       </div>
@@ -164,13 +183,13 @@ async function SignedInSections({
           <div className="flex gap-1 text-xs">
             <Link
               href={`?granularity=month&order=${order}`}
-              className={`rounded-full px-2 py-1 ${granularity === "month" ? "bg-neutral-900 text-white" : "bg-neutral-100"}`}
+              className={`rounded-full px-2 py-1 ${granularity === "month" ? "bg-accent text-white" : "bg-stone-100"}`}
             >
               Mensual
             </Link>
             <Link
               href={`?granularity=quarter&order=${order}`}
-              className={`rounded-full px-2 py-1 ${granularity === "quarter" ? "bg-neutral-900 text-white" : "bg-neutral-100"}`}
+              className={`rounded-full px-2 py-1 ${granularity === "quarter" ? "bg-accent text-white" : "bg-stone-100"}`}
             >
               Trimestral
             </Link>
@@ -179,11 +198,11 @@ async function SignedInSections({
         {timeseries && timeseries.length > 0 ? (
           <TimeseriesChart
             data={timeseries}
-            series={[{ key: "avg_rating", movingAvgKey: "moving_avg_3", label: "Nota", color: "#171717" }]}
+            series={[{ key: "avg_rating", movingAvgKey: "moving_avg_3", label: "Nota", color: "#c2410c" }]}
             yDomain={[1, 5]}
           />
         ) : (
-          <p className="text-sm text-neutral-400">Todavía no hay suficientes visitas valoradas.</p>
+          <p className="text-sm text-stone-400">Todavía no hay suficientes visitas valoradas.</p>
         )}
       </div>
 
@@ -195,7 +214,7 @@ async function SignedInSections({
               <Link
                 key={o}
                 href={`?granularity=${granularity}&order=${o}`}
-                className={`rounded-full px-2 py-1 ${order === o ? "bg-neutral-900 text-white" : "bg-neutral-100"}`}
+                className={`rounded-full px-2 py-1 ${order === o ? "bg-accent text-white" : "bg-stone-100"}`}
               >
                 {o === "repeat" ? "% repetiría" : o === "flavor" ? "Sabor" : "Tendencia"}
               </Link>
@@ -207,11 +226,11 @@ async function SignedInSections({
             <li key={d.dish_id}>
               <Link
                 href={`/dishes/${d.dish_id}`}
-                className="flex items-center justify-between rounded-lg border border-neutral-200 px-4 py-3 hover:border-neutral-400"
+                className="flex items-center justify-between rounded-lg border border-stone-200 px-4 py-3 hover:border-stone-400"
               >
                 <div>
                   <div className="font-medium">{d.dish_name}</div>
-                  <div className="text-xs text-neutral-500">
+                  <div className="text-xs text-stone-500">
                     Sabor {d.recent_flavor ?? "—"} · {d.recent_repeat_pct ?? "—"}% repetiría · n={d.recent_n ?? 0}
                   </div>
                 </div>
@@ -220,7 +239,7 @@ async function SignedInSections({
             </li>
           ))}
           {(!rankings || rankings.length === 0) && (
-            <p className="text-sm text-neutral-400">Todavía no hay platos registrados en este sitio.</p>
+            <p className="text-sm text-stone-400">Todavía no hay platos registrados en este sitio.</p>
           )}
         </ul>
       </div>
@@ -229,10 +248,10 @@ async function SignedInSections({
         <h2 className="mb-2 text-sm font-semibold">Reseñas que puedes ver</h2>
         <ul className="flex flex-col gap-3">
           {reviews?.map((r) => (
-            <li key={r.id} className="rounded-lg border border-neutral-200 px-4 py-3">
-              <div className="flex items-center justify-between text-xs text-neutral-500">
+            <li key={r.id} className="rounded-lg border border-stone-200 px-4 py-3">
+              <div className="flex items-center justify-between text-xs text-stone-500">
                 {r.profiles ? (
-                  <Link href={`/u/${r.profiles.username}`} className="font-medium text-neutral-800">
+                  <Link href={`/u/${r.profiles.username}`} className="font-medium text-stone-800">
                     {r.profiles.display_name || `@${r.profiles.username}`}
                   </Link>
                 ) : (
@@ -245,7 +264,7 @@ async function SignedInSections({
             </li>
           ))}
           {(!reviews || reviews.length === 0) && (
-            <p className="text-sm text-neutral-400">
+            <p className="text-sm text-stone-400">
               Todavía no hay reseñas que puedas ver. Sigue a más gente o registra la tuya.
             </p>
           )}

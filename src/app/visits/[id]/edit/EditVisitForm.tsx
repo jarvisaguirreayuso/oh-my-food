@@ -73,8 +73,8 @@ export function EditVisitForm({ visit }: { visit: VisitData }) {
       <input type="hidden" name="payload" value={payload} />
       <input type="hidden" name="originalDishIds" value={JSON.stringify(originalDishIds)} />
 
-      <div className="rounded-lg bg-neutral-50 px-4 py-3">
-        <div className="text-sm text-neutral-500">Sitio</div>
+      <div className="rounded-lg bg-stone-50 px-4 py-3">
+        <div className="text-sm text-stone-500">Sitio</div>
         <div className="font-medium">{visit.places?.name}</div>
       </div>
 
@@ -85,7 +85,7 @@ export function EditVisitForm({ visit }: { visit: VisitData }) {
           value={visitedOn}
           max={todayISO()}
           onChange={(e) => setVisitedOn(e.target.value)}
-          className="rounded-lg border border-neutral-300 px-4 py-3 text-base outline-none focus:border-neutral-900"
+          className="rounded-lg border border-stone-300 px-4 py-3 text-base outline-none focus:border-accent"
         />
       </label>
 
@@ -96,7 +96,7 @@ export function EditVisitForm({ visit }: { visit: VisitData }) {
           value={placeComment}
           onChange={(e) => setPlaceComment(e.target.value)}
           rows={2}
-          className="mt-2 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-neutral-900"
+          className="mt-2 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm outline-none focus:border-accent"
         />
       </div>
 
@@ -105,7 +105,7 @@ export function EditVisitForm({ visit }: { visit: VisitData }) {
           <p className="text-sm font-medium">Platos</p>
           <button
             type="button"
-            className="text-sm font-medium text-blue-600"
+            className="text-sm font-medium text-accent"
             onClick={() =>
               setDishes((d) => [
                 ...d,
@@ -132,7 +132,7 @@ export function EditVisitForm({ visit }: { visit: VisitData }) {
       <div>
         <p className="mb-2 text-sm font-medium">¿Quién puede ver esta reseña?</p>
         <AudiencePicker initial={privacy} onChange={setPrivacy} />
-        <p className="mt-2 text-xs text-neutral-400">
+        <p className="mt-2 text-xs text-stone-400">
           Ampliar la audiencia es seguro. Al restringirla, quien ya la vio puede recordarla.
         </p>
       </div>
@@ -140,7 +140,7 @@ export function EditVisitForm({ visit }: { visit: VisitData }) {
       <button
         type="submit"
         disabled={pending}
-        className="rounded-lg bg-neutral-900 px-4 py-3 font-medium text-white disabled:opacity-50"
+        className="rounded-lg bg-accent px-4 py-3 font-medium text-white disabled:opacity-50"
       >
         {pending ? "Guardando…" : "Guardar cambios"}
       </button>
