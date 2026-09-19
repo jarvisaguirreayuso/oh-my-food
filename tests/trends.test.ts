@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createClient } from "@supabase/supabase-js";
+import type { Database } from "@/lib/database.types";
 import { SEED_PLACES, SUPABASE_ANON_KEY, SUPABASE_URL } from "./env";
 
 // Validates the temporal RPCs (supabase/migrations/20260918100006 and
@@ -8,7 +9,7 @@ import { SEED_PLACES, SUPABASE_ANON_KEY, SUPABASE_URL } from "./env";
 // 4.7 -> 3.1), Taco Volador (stable ~4.0), Mercado de la Paella (sparse,
 // ~1 visit/quarter -> should read as insufficient_data).
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // Wide enough to cover the seed's ~18 months of synthetic history relative
 // to "today", without generating an excessive number of empty periods.

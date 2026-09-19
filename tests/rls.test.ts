@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/lib/database.types";
 import { SEED_PLACES, SEED_USERS, SUPABASE_ANON_KEY, SUPABASE_URL } from "./env";
 
 // Exercises RLS policies from supabase/migrations/20260918100004_rls.sql
@@ -9,8 +10,8 @@ import { SEED_PLACES, SEED_USERS, SUPABASE_ANON_KEY, SUPABASE_URL } from "./env"
 // role can't touch, so `update`/`delete` succeed with an empty `data` array
 // rather than erroring.
 
-function client(): SupabaseClient {
-  return createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+function client(): SupabaseClient<Database> {
+  return createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY);
 }
 
 async function signIn(user: { email: string; password: string }) {
