@@ -1,7 +1,15 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-export async function middleware(request: NextRequest) {
+// Routes that need a session. Reading places/dishes stays public for now
+// (open product question: docs/plan-fase-2-social.md, B.9 #3).
+const PROTECTED_PREFIXES = ["/visits", "/places/new"];
+
+function requiresSession(pathname: string) {
+  return PROTECTED_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+}
+
+export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
@@ -25,7 +33,16 @@ export async function middleware(request: NextRequest) {
 
   // Refresh the session if needed. Do not add logic between createServerClient
   // and this call, and do not remove it: it keeps the auth cookies in sync.
-  await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user && requiresSession(request.nextUrl.pathname)) {
+    const redirect = NextResponse.redirect(new URL("/auth/login", request.url));
+    // Carry over any cookies the refresh above tried to set (e.g. clearing a stale session).
+    supabaseResponse.cookies.getAll().forEach((c) => redirect.cookies.set(c));
+    return redirect;
+  }
 
   return supabaseResponse;
 }

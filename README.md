@@ -58,11 +58,20 @@ tests/
   A trigger enforces that the reviewed dish actually belongs to the visit's
   place.
 
-RLS: everything is publicly readable. Writes are scoped to the owner
+RLS: everything is publicly readable, except that anonymous visitors cannot
+read `visits.user_id` (who wrote a visit). Writes are scoped to the owner
 (`user_id`/`created_by` = `auth.uid()`). `visits`/`dish_reviews` are
 editable/deletable only by their author. `places`/`dishes` can never be
 deleted by clients and are editable only by their creator. See
 `supabase/migrations/20260918100004_rls.sql`.
+
+Table privileges are a second line of defence, because RLS does not cover
+everything (e.g. `TRUNCATE`). `20260919100000_lock_down_grants.sql` revokes
+Supabase's default grants and leaves `anon` with read-only access (no
+`visits.user_id`) and `authenticated` with only the writes that RLS then
+scopes. Consequences for code: anonymous clients must list `visits` columns
+explicitly (`select *` is rejected) and cannot embed `profiles` through
+`visits`; any new table or RPC needs an explicit `grant`.
 
 ## Temporal metrics
 

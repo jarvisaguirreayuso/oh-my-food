@@ -12,6 +12,33 @@ const TYPE_LABELS: Record<string, string> = {
   other: "Otro",
 };
 
+// Anonymous visitors can't read visits.user_id, so they can't embed the author
+// either: the author is only requested for signed-in users.
+async function loadReviews(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  placeId: string,
+  withAuthor: boolean
+) {
+  if (withAuthor) {
+    const { data } = await supabase
+      .from("visits")
+      .select("id, visited_on, place_rating, place_comment, profiles(username)")
+      .eq("place_id", placeId)
+      .not("place_rating", "is", null)
+      .order("visited_on", { ascending: false })
+      .limit(20);
+    return { data: data?.map((r) => ({ ...r, author: r.profiles?.username ?? null })) ?? null };
+  }
+  const { data } = await supabase
+    .from("visits")
+    .select("id, visited_on, place_rating, place_comment")
+    .eq("place_id", placeId)
+    .not("place_rating", "is", null)
+    .order("visited_on", { ascending: false })
+    .limit(20);
+  return { data: data?.map((r) => ({ ...r, author: null as string | null })) ?? null };
+}
+
 export default async function PlaceDetailPage({
   params,
   searchParams,
@@ -25,6 +52,9 @@ export default async function PlaceDetailPage({
   const order = rawOrder ?? "repeat";
 
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   const { data: place } = await supabase.from("places").select("*").eq("id", id).single();
   if (!place) notFound();
@@ -46,13 +76,7 @@ export default async function PlaceDetailPage({
         p_to: toStr,
       }),
       supabase.rpc("dish_rankings_for_place", { p_place_id: id, p_order_by: order }),
-      supabase
-        .from("visits")
-        .select("id, visited_on, place_rating, place_comment, profiles(username)")
-        .eq("place_id", id)
-        .not("place_rating", "is", null)
-        .order("visited_on", { ascending: false })
-        .limit(20),
+      loadReviews(supabase, id, Boolean(user)),
     ]);
 
   return (
@@ -66,7 +90,7 @@ export default async function PlaceDetailPage({
           </p>
         </div>
         <Link
-          href={`/visits/new`}
+          href={`/visits/new?place=${place.id}`}
           className="shrink-0 rounded-lg bg-neutral-900 px-3 py-2 text-xs font-medium text-white"
         >
           Registrar visita
@@ -158,7 +182,7 @@ export default async function PlaceDetailPage({
           {reviews?.map((r) => (
             <li key={r.id} className="rounded-lg border border-neutral-200 px-4 py-3">
               <div className="flex items-center justify-between text-xs text-neutral-500">
-                <span>{r.profiles?.username ?? "Usuario"}</span>
+                <span>{r.author ?? "Usuario"}</span>
                 <span>{r.visited_on}</span>
               </div>
               <div className="mt-1 font-medium">{"★".repeat(r.place_rating ?? 0)}</div>

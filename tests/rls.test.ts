@@ -79,10 +79,82 @@ describe("row level security", () => {
     await anaClient.from("visits").delete().eq("id", ownVisitId);
   });
 
-  it("lets anyone (even unauthenticated) read visits and dish_reviews", async () => {
-    const { data, error } = await client().from("visits").select("id").eq("id", ownVisitId);
+  // Privilege lock-down (20260919100000_lock_down_grants.sql). Postgres rejects
+  // a missing privilege with 42501 (insufficient_privilege), unlike RLS which
+  // silently filters rows.
+  const INSUFFICIENT_PRIVILEGE = "42501";
+
+  it("lets anon read visits and dish_reviews, but never who wrote a visit", async () => {
+    const { data, error } = await client()
+      .from("visits")
+      .select("id, place_id, visited_on, place_rating, place_comment")
+      .eq("id", ownVisitId);
     expect(error).toBeNull();
     expect(data).toHaveLength(1);
+
+    const { data: reviews, error: reviewsErr } = await client()
+      .from("dish_reviews")
+      .select("id, dish_id, flavor")
+      .eq("id", ownDishReviewId);
+    expect(reviewsErr).toBeNull();
+    expect(reviews).toHaveLength(1);
+  });
+
+  it("hides visits.user_id from anon (select, filter, star and embed)", async () => {
+    const selectUserId = await client().from("visits").select("user_id").eq("id", ownVisitId);
+    expect(selectUserId.error?.code).toBe(INSUFFICIENT_PRIVILEGE);
+
+    // Filtering by the column would be an oracle even without selecting it.
+    const filterByUser = await client().from("visits").select("id").eq("user_id", SEED_USERS.ana.id);
+    expect(filterByUser.error?.code).toBe(INSUFFICIENT_PRIVILEGE);
+
+    const selectStar = await client().from("visits").select("*").eq("id", ownVisitId);
+    expect(selectStar.error?.code).toBe(INSUFFICIENT_PRIVILEGE);
+
+    const embedAuthor = await client().from("visits").select("id, profiles(username)").eq("id", ownVisitId);
+    expect(embedAuthor.error?.code).toBe(INSUFFICIENT_PRIVILEGE);
+  });
+
+  it("still lets signed-in users read visits.user_id", async () => {
+    const { data, error } = await brunoClient.from("visits").select("user_id").eq("id", ownVisitId);
+    expect(error).toBeNull();
+    expect(data?.[0]?.user_id).toBe(SEED_USERS.ana.id);
+  });
+
+  it("gives anon no write privileges on any table", async () => {
+    const insert = await client().from("places").insert({ name: "anon place", type: "restaurant" });
+    expect(insert.error?.code).toBe(INSUFFICIENT_PRIVILEGE);
+
+    const update = await client().from("visits").update({ place_comment: "anon" }).eq("id", ownVisitId);
+    expect(update.error?.code).toBe(INSUFFICIENT_PRIVILEGE);
+
+    const del = await client().from("visits").delete().eq("id", ownVisitId);
+    expect(del.error?.code).toBe(INSUFFICIENT_PRIVILEGE);
+
+    const delReview = await client().from("dish_reviews").delete().eq("id", ownDishReviewId);
+    expect(delReview.error?.code).toBe(INSUFFICIENT_PRIVILEGE);
+  });
+
+  it("does not let signed-in users delete places, dishes or profiles", async () => {
+    const place = await brunoClient.from("places").delete().eq("id", SEED_PLACES.stable);
+    expect(place.error?.code).toBe(INSUFFICIENT_PRIVILEGE);
+
+    const dish = await brunoClient.from("dishes").delete().eq("id", stableDishId);
+    expect(dish.error?.code).toBe(INSUFFICIENT_PRIVILEGE);
+
+    const profile = await brunoClient.from("profiles").delete().eq("id", SEED_USERS.bruno.id);
+    expect(profile.error?.code).toBe(INSUFFICIENT_PRIVILEGE);
+  });
+
+  it("does not let anon call save_visit", async () => {
+    const { error } = await client().rpc("save_visit", {
+      p_place_id: SEED_PLACES.stable,
+      p_visited_on: "2020-03-01",
+      p_place_rating: 5,
+      p_place_comment: "anon",
+      p_dishes: [],
+    });
+    expect(error?.code).toBe(INSUFFICIENT_PRIVILEGE);
   });
 
   it("blocks another user from updating a visit they don't own", async () => {
