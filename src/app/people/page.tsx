@@ -11,7 +11,7 @@ export default async function PeoplePage({
   searchParams: Promise<{ q?: string; tab?: string }>;
 }) {
   const { q: rawQ, tab: rawTab } = await searchParams;
-  const tab = rawTab === "followers" ? "followers" : "following";
+  const tab = rawTab === "followers" ? "followers" : rawTab === "discover" ? "discover" : "following";
   // Keep the term to plain characters: it goes into a PostgREST filter expression.
   const q = (rawQ ?? "").replace(/[^\p{L}\p{N}_ .-]/gu, "").trim().slice(0, 40);
 
@@ -36,6 +36,16 @@ export default async function PeoplePage({
       .or(`username.ilike.${q}%,display_name.ilike.%${q}%`)
       .neq("id", user.id)
       .limit(20);
+    people = data ?? [];
+  } else if (tab === "discover") {
+    // Everyone else on the app, so a brand-new user with zero follows still has
+    // someone to find, not just an empty "Siguiendo" list.
+    const { data } = await supabase
+      .from("profiles")
+      .select("id, username, display_name, bio")
+      .neq("id", user.id)
+      .order("username")
+      .limit(50);
     people = data ?? [];
   } else {
     const ids = [...(tab === "followers" ? followerIds : followingIds)];
@@ -65,12 +75,15 @@ export default async function PeoplePage({
       {q ? (
         <h1 className="font-display mb-3 text-sm font-semibold">Resultados para “{q}”</h1>
       ) : (
-        <div className="mb-3 flex gap-2">
+        <div className="-mx-4 mb-3 flex gap-2 overflow-x-auto px-4 pb-1">
           <Link href="/people?tab=following" className={tabClass(tab === "following")}>
             Siguiendo ({followingIds.size})
           </Link>
           <Link href="/people?tab=followers" className={tabClass(tab === "followers")}>
             Seguidores ({followerIds.size})
+          </Link>
+          <Link href="/people?tab=discover" className={tabClass(tab === "discover")}>
+            Descubrir
           </Link>
         </div>
       )}
@@ -94,7 +107,9 @@ export default async function PeoplePage({
               ? "No hay nadie con ese nombre."
               : tab === "followers"
                 ? "Todavía no te sigue nadie."
-                : "Todavía no sigues a nadie. Busca a alguien por su nombre de usuario."}
+                : tab === "discover"
+                  ? "Todavía no hay nadie más en la aplicación."
+                  : "Todavía no sigues a nadie. Busca a alguien por su nombre de usuario."}
           </p>
         )}
       </ul>

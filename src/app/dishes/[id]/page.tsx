@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { TrendBadge } from "@/components/TrendBadge";
 import { TimeseriesChart } from "@/components/TimeseriesChart";
+import { DishPhotoUploader } from "@/components/DishPhotoUploader";
 
 export default async function DishDetailPage({
   params,
@@ -38,9 +39,13 @@ export default async function DishDetailPage({
         </Link>
       </p>
       <div className="mb-4 flex items-center gap-3">
-        {dish.photo_url && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={dish.photo_url} alt="" className="h-16 w-16 rounded-lg object-cover" />
+        {user ? (
+          <DishPhotoUploader dishId={dish.id} initialPhotoUrl={dish.photo_url} />
+        ) : (
+          dish.photo_url && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={dish.photo_url} alt="" className="h-16 w-16 rounded-lg object-cover" />
+          )
         )}
         <div>
           <h1 className="font-display text-2xl font-bold">{dish.name}</h1>

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
-import { getPlaceGeneralScores } from "@/lib/places";
+import { getPlaceGeneralScores, TYPE_LABELS } from "@/lib/places";
 import { PlaceList } from "@/components/PlaceList";
 import { Chip } from "@/components/ui/Chip";
 import { MapLoader, type MapPlace } from "@/components/map/MapLoader";
@@ -10,12 +10,13 @@ type State = "all" | "visited" | "saved";
 export default async function MapPage({
   searchParams,
 }: {
-  searchParams: Promise<{ state?: string; list?: string; view?: string }>;
+  searchParams: Promise<{ state?: string; list?: string; view?: string; type?: string }>;
 }) {
   const sp = await searchParams;
   const state: State = sp.state === "visited" || sp.state === "saved" ? sp.state : "all";
   const view = sp.view === "list" ? "list" : "map";
   const listId = z.guid().safeParse(sp.list).data ?? null;
+  const type = sp.type && sp.type in TYPE_LABELS ? sp.type : null;
 
   const supabase = await createClient();
   const {
@@ -47,8 +48,10 @@ export default async function MapPage({
     if (state === "visited" && !visited.has(p.id)) return false;
     if (state === "saved" && !saved.has(p.id)) return false;
     if (inList && !inList.has(p.id)) return false;
+    if (type && p.type !== type) return false;
     return true;
   });
+  const typesPresent = Array.from(new Set((places ?? []).map((p) => p.type))).filter((t) => t in TYPE_LABELS);
   const mapPlaces: MapPlace[] = filtered.flatMap((p) =>
     p.lat != null && p.lng != null
       ? [
@@ -68,9 +71,15 @@ export default async function MapPage({
       : []
   );
 
-  const href = (next: Partial<Record<"state" | "list" | "view", string | null>>) => {
+  const href = (next: Partial<Record<"state" | "list" | "view" | "type", string | null>>) => {
     const params = new URLSearchParams();
-    const merged = { state: state === "all" ? null : state, list: listId, view: view === "map" ? null : view, ...next };
+    const merged = {
+      state: state === "all" ? null : state,
+      list: listId,
+      view: view === "map" ? null : view,
+      type,
+      ...next,
+    };
     for (const [k, v] of Object.entries(merged)) if (v) params.set(k, v);
     const qs = params.toString();
     return qs ? `/map?${qs}` : "/map";
@@ -105,6 +114,19 @@ export default async function MapPage({
           {lists.map((l) => (
             <Chip key={l.id} href={href({ list: l.id === listId ? null : l.id })} active={l.id === listId}>
               {l.name}
+            </Chip>
+          ))}
+        </div>
+      )}
+
+      {typesPresent.length > 1 && (
+        <div className="-mx-4 mb-3 flex gap-2 overflow-x-auto px-4 pb-1">
+          <Chip href={href({ type: null })} active={!type}>
+            Todos los tipos
+          </Chip>
+          {typesPresent.map((t) => (
+            <Chip key={t} href={href({ type: t === type ? null : t })} active={t === type}>
+              {TYPE_LABELS[t]}
             </Chip>
           ))}
         </div>
