@@ -40,7 +40,6 @@ export type Database = {
           created_at: string
           dish_id: string
           execution: number
-          flavor: number
           id: string
           idea: number
           updated_at: string
@@ -52,7 +51,6 @@ export type Database = {
           created_at?: string
           dish_id: string
           execution: number
-          flavor: number
           id?: string
           idea: number
           updated_at?: string
@@ -64,7 +62,6 @@ export type Database = {
           created_at?: string
           dish_id?: string
           execution?: number
-          flavor?: number
           id?: string
           idea?: number
           updated_at?: string
@@ -96,7 +93,9 @@ export type Database = {
           id: string
           name: string
           name_normalized: string | null
+          photo_url: string | null
           place_id: string
+          price: number | null
         }
         Insert: {
           created_at?: string
@@ -105,7 +104,9 @@ export type Database = {
           id?: string
           name: string
           name_normalized?: string | null
+          photo_url?: string | null
           place_id: string
+          price?: number | null
         }
         Update: {
           created_at?: string
@@ -114,7 +115,9 @@ export type Database = {
           id?: string
           name?: string
           name_normalized?: string | null
+          photo_url?: string | null
           place_id?: string
+          price?: number | null
         }
         Relationships: [
           {
@@ -275,19 +278,16 @@ export type Database = {
       profile_settings: {
         Row: {
           default_audience: Database["public"]["Enums"]["audience"]
-          default_pools_publicly: boolean
           updated_at: string
           user_id: string
         }
         Insert: {
           default_audience?: Database["public"]["Enums"]["audience"]
-          default_pools_publicly?: boolean
           updated_at?: string
           user_id: string
         }
         Update: {
           default_audience?: Database["public"]["Enums"]["audience"]
-          default_pools_publicly?: boolean
           updated_at?: string
           user_id?: string
         }
@@ -372,7 +372,7 @@ export type Database = {
           place_comment: string | null
           place_id: string
           place_rating: number | null
-          pools_publicly: boolean
+          pools_publicly: boolean | null
           updated_at: string
           user_id: string
           visited_on: string
@@ -384,7 +384,7 @@ export type Database = {
           place_comment?: string | null
           place_id: string
           place_rating?: number | null
-          pools_publicly?: boolean
+          pools_publicly?: boolean | null
           updated_at?: string
           user_id: string
           visited_on?: string
@@ -396,7 +396,7 @@ export type Database = {
           place_comment?: string | null
           place_id?: string
           place_rating?: number | null
-          pools_publicly?: boolean
+          pools_publicly?: boolean | null
           updated_at?: string
           user_id?: string
           visited_on?: string
@@ -428,7 +428,6 @@ export type Database = {
         Args: { p_dish_ids: string[] }
         Returns: {
           avg_execution: number
-          avg_flavor: number
           avg_idea: number
           dish_id: string
           n: number
@@ -440,9 +439,9 @@ export type Database = {
         Returns: {
           dish_id: string
           dish_name: string
-          recent_flavor: number
           recent_n: number
           recent_repeat_pct: number
+          recent_score: number
           trend_delta: number
           trend_status: string
         }[]
@@ -451,12 +450,10 @@ export type Database = {
         Args: { p_dish_id: string }
         Returns: {
           historical_execution: number
-          historical_flavor: number
           historical_idea: number
           historical_n: number
           historical_repeat_pct: number
           recent_execution: number
-          recent_flavor: number
           recent_idea: number
           recent_n: number
           recent_repeat_pct: number
@@ -471,10 +468,8 @@ export type Database = {
         }
         Returns: {
           avg_execution: number
-          avg_flavor: number
           avg_idea: number
           moving_avg_execution: number
-          moving_avg_flavor: number
           moving_avg_idea: number
           moving_avg_repeat_pct: number
           n: number
@@ -543,7 +538,6 @@ export type Database = {
           p_place_comment: string
           p_place_id: string
           p_place_rating: number
-          p_pools_publicly?: boolean
           p_visited_on: string
         }
         Returns: string
@@ -568,6 +562,10 @@ export type Database = {
           name: string
           similarity: number
         }[]
+      }
+      set_dish_photo: {
+        Args: { p_dish_id: string; p_photo_url: string }
+        Returns: undefined
       }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }

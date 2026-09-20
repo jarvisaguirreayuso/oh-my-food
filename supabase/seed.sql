@@ -103,8 +103,8 @@ begin
       if v_visit_id is not null then
         for v_dish in select id from public.dishes where place_id = v_place_id loop
           v_dish_score := greatest(1, least(5, round(v_base + (random() - 0.5) * 0.8)));
-          insert into public.dish_reviews (visit_id, dish_id, idea, execution, flavor, would_repeat, comment)
-          values (v_visit_id, v_dish.id, v_dish_score, v_dish_score, v_dish_score, v_dish_score >= 4, null)
+          insert into public.dish_reviews (visit_id, dish_id, idea, execution, would_repeat, comment)
+          values (v_visit_id, v_dish.id, v_dish_score, v_dish_score, v_dish_score >= 4, null)
           on conflict (visit_id, dish_id) do nothing;
         end loop;
       end if;
@@ -122,8 +122,8 @@ begin
       if v_visit_id is not null then
         for v_dish in select id from public.dishes where place_id = v_place_id loop
           v_dish_score := greatest(1, least(5, round(v_base + (random() - 0.5) * 0.8)));
-          insert into public.dish_reviews (visit_id, dish_id, idea, execution, flavor, would_repeat, comment)
-          values (v_visit_id, v_dish.id, v_dish_score, v_dish_score, v_dish_score, v_dish_score >= 4, null)
+          insert into public.dish_reviews (visit_id, dish_id, idea, execution, would_repeat, comment)
+          values (v_visit_id, v_dish.id, v_dish_score, v_dish_score, v_dish_score >= 4, null)
           on conflict (visit_id, dish_id) do nothing;
         end loop;
       end if;
@@ -141,8 +141,8 @@ begin
       if v_visit_id is not null then
         for v_dish in select id from public.dishes where place_id = v_place_id loop
           v_dish_score := greatest(1, least(5, round(v_base + (random() - 0.5) * 0.6)));
-          insert into public.dish_reviews (visit_id, dish_id, idea, execution, flavor, would_repeat, comment)
-          values (v_visit_id, v_dish.id, v_dish_score, v_dish_score, v_dish_score, v_dish_score >= 4, null)
+          insert into public.dish_reviews (visit_id, dish_id, idea, execution, would_repeat, comment)
+          values (v_visit_id, v_dish.id, v_dish_score, v_dish_score, v_dish_score >= 4, null)
           on conflict (visit_id, dish_id) do nothing;
         end loop;
       end if;
@@ -164,8 +164,8 @@ begin
       if v_visit_id is not null then
         for v_dish in select id from public.dishes where place_id = v_place_filler loop
           v_dish_score := greatest(1, least(5, round(3.8 + (random() - 0.5) * 0.8)));
-          insert into public.dish_reviews (visit_id, dish_id, idea, execution, flavor, would_repeat, comment)
-          values (v_visit_id, v_dish.id, v_dish_score, v_dish_score, v_dish_score, v_dish_score >= 4, null)
+          insert into public.dish_reviews (visit_id, dish_id, idea, execution, would_repeat, comment)
+          values (v_visit_id, v_dish.id, v_dish_score, v_dish_score, v_dish_score >= 4, null)
           on conflict (visit_id, dish_id) do nothing;
         end loop;
       end if;
@@ -178,7 +178,7 @@ end $$;
 -- RLS) keep seeing them, and there is a small follow graph to exercise the
 -- audiences: ana <-> bruno are mutual, carla follows ana, ana follows david,
 -- and nobody follows carla or bruno-only-ish otherwise.
-update public.visits set audience = 'public', pools_publicly = true;
+update public.visits set audience = 'public';
 
 insert into public.follows (follower_id, followee_id) values
   ('11111111-1111-1111-1111-111111111111', '22222222-2222-2222-2222-222222222222'),

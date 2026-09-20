@@ -14,7 +14,7 @@ export default async function MyVisitsPage() {
   const { data: visits } = await supabase
     .from("visits")
     .select(
-      "id, visited_on, place_rating, place_comment, audience, pools_publicly, places(id, name), dish_reviews(id, idea, execution, flavor, would_repeat, dishes(name))"
+      "id, visited_on, place_rating, place_comment, audience, pools_publicly, places(id, name), dish_reviews(id, idea, execution, would_repeat, dishes(name))"
     )
     .eq("user_id", user.id)
     .order("visited_on", { ascending: false });
@@ -48,7 +48,7 @@ export default async function MyVisitsPage() {
               <ul className="mt-2 flex flex-col gap-1 border-t pt-2 text-sm">
                 {v.dish_reviews.map((dr) => (
                   <li key={dr.id} className="text-stone-600">
-                    {dr.dishes?.name}: idea {dr.idea}, ejecución {dr.execution}, sabor {dr.flavor}
+                    {dr.dishes?.name}: idea {dr.idea}, ejecución {dr.execution}
                     {dr.would_repeat ? " · repetiría" : " · no repetiría"}
                   </li>
                 ))}

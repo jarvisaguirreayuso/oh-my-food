@@ -19,9 +19,9 @@ function emptyDish(): DishEntryValue {
     dishName: null,
     idea: 4,
     execution: 4,
-    flavor: 4,
     wouldRepeat: true,
     comment: "",
+    price: null,
   };
 }
 
@@ -48,7 +48,6 @@ export function NewVisitForm({
         placeComment: placeComment || null,
         dishes: dishes.filter((d) => d.dishId || (d.dishName && d.dishName.trim().length >= 2)),
         audience: privacy.audience,
-        poolsPublicly: privacy.poolsPublicly,
       })
     : "";
 

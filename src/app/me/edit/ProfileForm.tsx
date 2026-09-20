@@ -12,13 +12,11 @@ export function ProfileForm({
   displayName,
   bio,
   defaultAudience,
-  defaultPoolsPublicly,
 }: {
   username: string;
   displayName: string;
   bio: string;
   defaultAudience: Audience;
-  defaultPoolsPublicly: boolean;
 }) {
   const [state, formAction, pending] = useActionState(updateProfile, initialState);
   const input =
@@ -59,11 +57,7 @@ export function ProfileForm({
 
       <div>
         <p className="mb-2 text-sm font-medium">Quién ve tus reseñas nuevas por defecto</p>
-        <AudiencePicker
-          initial={{ audience: defaultAudience, poolsPublicly: defaultPoolsPublicly }}
-          audienceName="defaultAudience"
-          poolsName="defaultPoolsPublicly"
-        />
+        <AudiencePicker initial={{ audience: defaultAudience }} audienceName="defaultAudience" />
         <p className="mt-2 text-xs text-stone-400">
           Puedes cambiarlo en cada reseña. Sin cuenta, nadie ve reseñas sueltas: solo las medias generales.
         </p>

@@ -24,11 +24,7 @@ export default async function NewVisitPage({
     data: { user },
   } = await supabase.auth.getUser();
   const { data: settings } = user
-    ? await supabase
-        .from("profile_settings")
-        .select("default_audience, default_pools_publicly")
-        .eq("user_id", user.id)
-        .maybeSingle()
+    ? await supabase.from("profile_settings").select("default_audience").eq("user_id", user.id).maybeSingle()
     : { data: null };
 
   return (
@@ -36,7 +32,6 @@ export default async function NewVisitPage({
       initialPlace={initialPlace}
       defaults={{
         audience: settings?.default_audience ?? "followers",
-        poolsPublicly: settings?.default_pools_publicly ?? true,
       }}
     />
   );

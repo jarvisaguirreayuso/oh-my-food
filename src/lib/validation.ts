@@ -23,9 +23,10 @@ export const dishRatingSchema = z.object({
   dishName: z.string().trim().min(2).max(120).nullable(),
   idea: z.number().int().min(1).max(5),
   execution: z.number().int().min(1).max(5),
-  flavor: z.number().int().min(1).max(5),
   wouldRepeat: z.boolean(),
   comment: z.string().trim().max(2000).optional().nullable(),
+  // Only used the first time a dish is created; ignored for existing dishes.
+  price: z.number().positive().max(9999).optional().nullable(),
 }).refine((d) => d.dishId !== null || (d.dishName !== null && d.dishName.length >= 2), {
   message: "Selecciona un plato existente o escribe un nombre para uno nuevo",
   path: ["dishName"],
@@ -46,7 +47,6 @@ export const visitSchema = z.object({
   dishes: z.array(dishRatingSchema).default([]),
   // Omitted = use the user's defaults on insert / keep the current value on update.
   audience: audienceSchema.optional(),
-  poolsPublicly: z.boolean().optional(),
 });
 export type VisitInput = z.infer<typeof visitSchema>;
 
@@ -73,13 +73,10 @@ export const profileSchema = z
     displayName: z.string().trim().max(60, "Máximo 60 caracteres").nullable(),
     bio: z.string().trim().max(280, "Máximo 280 caracteres").nullable(),
     defaultAudience: audienceSchema,
-    defaultPoolsPublicly: z.boolean(),
   })
   .transform((p) => ({
     ...p,
     displayName: p.displayName || null,
     bio: p.bio || null,
-    // A private visit can never count towards the general average.
-    defaultPoolsPublicly: p.defaultAudience === "private" ? false : p.defaultPoolsPublicly,
   }));
 export type ProfileInput = z.infer<typeof profileSchema>;

@@ -33,7 +33,7 @@ export async function submitVisit(
     return { status: "error", message: parsed.error.issues[0]?.message ?? "Datos inválidos" };
   }
 
-  const { placeId, visitedOn, placeRating, placeComment, dishes, audience, poolsPublicly } = parsed.data;
+  const { placeId, visitedOn, placeRating, placeComment, dishes, audience } = parsed.data;
 
   const { data: visitId, error } = await supabase.rpc("save_visit", {
     p_place_id: placeId,
@@ -44,15 +44,14 @@ export async function submitVisit(
     p_place_rating: placeRating as number,
     p_place_comment: placeComment as string,
     p_audience: audience,
-    p_pools_publicly: poolsPublicly,
     p_dishes: dishes.map((d) => ({
       dish_id: d.dishId,
       dish_name: d.dishName,
       idea: d.idea,
       execution: d.execution,
-      flavor: d.flavor,
       would_repeat: d.wouldRepeat,
       comment: d.comment ?? null,
+      price: d.price ?? null,
     })),
   });
 

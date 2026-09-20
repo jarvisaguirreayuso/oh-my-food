@@ -20,13 +20,11 @@ type VisitData = {
   place_comment: string | null;
   place_id: string;
   audience: Audience;
-  pools_publicly: boolean;
   places: { id: string; name: string } | null;
   dish_reviews: Array<{
     id: string;
     idea: number;
     execution: number;
-    flavor: number;
     would_repeat: boolean;
     comment: string | null;
     dish_id: string;
@@ -41,7 +39,6 @@ export function EditVisitForm({ visit }: { visit: VisitData }) {
   const [placeComment, setPlaceComment] = useState(visit.place_comment ?? "");
   const [privacy, setPrivacy] = useState<AudienceValue>({
     audience: visit.audience,
-    poolsPublicly: visit.pools_publicly,
   });
   const [dishes, setDishes] = useState<DishEntryValue[]>(
     visit.dish_reviews.map((dr) => ({
@@ -49,9 +46,9 @@ export function EditVisitForm({ visit }: { visit: VisitData }) {
       dishName: dr.dishes?.name ?? "",
       idea: dr.idea,
       execution: dr.execution,
-      flavor: dr.flavor,
       wouldRepeat: dr.would_repeat,
       comment: dr.comment ?? "",
+      price: null,
     }))
   );
 
@@ -64,7 +61,6 @@ export function EditVisitForm({ visit }: { visit: VisitData }) {
     placeComment: placeComment || null,
     dishes: dishes.filter((d) => d.dishId || (d.dishName && d.dishName.trim().length >= 2)),
     audience: privacy.audience,
-    poolsPublicly: privacy.poolsPublicly,
   });
 
   return (
@@ -109,7 +105,7 @@ export function EditVisitForm({ visit }: { visit: VisitData }) {
             onClick={() =>
               setDishes((d) => [
                 ...d,
-                { dishId: null, dishName: null, idea: 4, execution: 4, flavor: 4, wouldRepeat: true, comment: "" },
+                { dishId: null, dishName: null, idea: 4, execution: 4, wouldRepeat: true, comment: "", price: null },
               ])
             }
           >

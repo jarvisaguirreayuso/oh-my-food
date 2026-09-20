@@ -19,7 +19,6 @@ export async function updateProfile(_prev: ProfileState, formData: FormData): Pr
     displayName: formData.get("displayName") || null,
     bio: formData.get("bio") || null,
     defaultAudience: formData.get("defaultAudience"),
-    defaultPoolsPublicly: formData.get("defaultPoolsPublicly") === "on",
   });
   if (!parsed.success) {
     return { status: "error", message: parsed.error.issues[0]?.message ?? "Datos inválidos" };
@@ -40,7 +39,6 @@ export async function updateProfile(_prev: ProfileState, formData: FormData): Pr
   const { error: settingsError } = await supabase.from("profile_settings").upsert({
     user_id: user.id,
     default_audience: p.defaultAudience,
-    default_pools_publicly: p.defaultPoolsPublicly,
   });
   if (settingsError) return { status: "error", message: settingsError.message };
 

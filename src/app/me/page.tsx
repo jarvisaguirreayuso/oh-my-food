@@ -14,7 +14,7 @@ export default async function MePage() {
 
   const [{ data: profile }, { data: settings }, following, followers, visits] = await Promise.all([
     supabase.from("profiles").select("username, display_name, bio").eq("id", user.id).single(),
-    supabase.from("profile_settings").select("default_audience, default_pools_publicly").eq("user_id", user.id).maybeSingle(),
+    supabase.from("profile_settings").select("default_audience").eq("user_id", user.id).maybeSingle(),
     supabase.from("follows").select("followee_id", { count: "exact", head: true }).eq("follower_id", user.id),
     supabase.from("follows").select("follower_id", { count: "exact", head: true }).eq("followee_id", user.id),
     supabase.from("visits").select("id", { count: "exact", head: true }).eq("user_id", user.id),
@@ -23,7 +23,6 @@ export default async function MePage() {
   if (isProvisionalUsername(profile.username)) redirect("/me/edit?welcome=1");
 
   const audience = settings?.default_audience ?? "followers";
-  const pools = settings?.default_pools_publicly ?? true;
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-6">
@@ -56,8 +55,8 @@ export default async function MePage() {
       <div className="mt-5 rounded-xl bg-stone-50 px-4 py-3 text-sm">
         <div className="font-medium">Privacidad de tus reseñas nuevas</div>
         <p className="mt-1 text-stone-600">
-          Las ve: {AUDIENCE_LABELS[audience].toLowerCase()}.{" "}
-          {pools ? "Tu nota cuenta en la media general del sitio, sin tu nombre." : "No cuentan en la media general."}
+          Las ve: {AUDIENCE_LABELS[audience].toLowerCase()}. Tu nota cuenta siempre en la media
+          general del sitio (sin tu nombre), salvo que la marques como solo tuya.
         </p>
         <Link href="/me/edit" className="mt-1 inline-block text-xs text-accent">
           Cambiar
