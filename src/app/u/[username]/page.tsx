@@ -21,7 +21,11 @@ export default async function UserProfilePage({ params }: { params: Promise<{ us
 
   const isMe = profile.id === user.id;
 
-  const [iFollow, followsMe, { data: visits }] = await Promise.all([
+  // The follow graph itself is private (RLS only lets you read edges you're part
+  // of), so we don't surface this person's raw following/follower counts unless
+  // it's your own profile -- only the visits count, which is naturally scoped by
+  // the same audience rules as the list below.
+  const [iFollow, followsMe, { data: visits }, visitCount] = await Promise.all([
     supabase.from("follows").select("followee_id").eq("follower_id", user.id).eq("followee_id", profile.id).maybeSingle(),
     supabase.from("follows").select("follower_id").eq("follower_id", profile.id).eq("followee_id", user.id).maybeSingle(),
     // Only the visits this person lets us see come back; RLS does the filtering.
@@ -33,6 +37,7 @@ export default async function UserProfilePage({ params }: { params: Promise<{ us
       .eq("user_id", profile.id)
       .order("visited_on", { ascending: false })
       .limit(30),
+    supabase.from("visits").select("id", { count: "exact", head: true }).eq("user_id", profile.id),
   ]);
   const following = Boolean(iFollow.data);
   const mutual = following && Boolean(followsMe.data);
@@ -48,6 +53,9 @@ export default async function UserProfilePage({ params }: { params: Promise<{ us
               {mutual ? "Amigos (os seguís)" : "Te sigue"}
             </span>
           )}
+          <p className="mt-1 text-sm text-stone-500">
+            {visitCount.count ?? 0} {visitCount.count === 1 ? "visita" : "visitas"}
+          </p>
         </div>
         {isMe ? (
           <Link href="/me/edit" className="rounded-full border border-stone-300 px-4 py-1.5 text-sm font-medium">
@@ -63,7 +71,7 @@ export default async function UserProfilePage({ params }: { params: Promise<{ us
       {visits && visits.length > 0 ? (
         <ul className="flex flex-col gap-3">
           {visits.map((v) => (
-            <VisitCard key={v.id} visit={v} showAudience={isMe} />
+            <VisitCard key={v.id} visit={v} showAudience={isMe} showEdit={isMe} />
           ))}
         </ul>
       ) : (

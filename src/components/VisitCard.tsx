@@ -23,10 +23,12 @@ export function VisitCard({
   visit,
   showAuthor = false,
   showAudience = false,
+  showEdit = false,
 }: {
   visit: VisitCardData;
   showAuthor?: boolean;
   showAudience?: boolean;
+  showEdit?: boolean;
 }) {
   const author = visit.profiles;
   return (
@@ -41,9 +43,16 @@ export function VisitCard({
           {showAuthor && author ? " · " : ""}
           {visit.visited_on}
         </span>
-        {showAudience && visit.audience && (
-          <span className="rounded-full bg-stone-100 px-2 py-0.5">{AUDIENCE_LABELS[visit.audience]}</span>
-        )}
+        <span className="flex items-center gap-2">
+          {showAudience && visit.audience && (
+            <span className="rounded-full bg-stone-100 px-2 py-0.5">{AUDIENCE_LABELS[visit.audience]}</span>
+          )}
+          {showEdit && (
+            <Link href={`/visits/${visit.id}/edit`} className="text-accent">
+              editar
+            </Link>
+          )}
+        </span>
       </div>
       <div className="mt-1 flex items-baseline justify-between gap-3">
         {visit.places && (
