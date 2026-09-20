@@ -3,20 +3,12 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { TYPE_LABELS, getPlaceGeneralScores } from "@/lib/places";
 import { TrendBadge } from "@/components/TrendBadge";
-import { TimeseriesChart } from "@/components/TimeseriesChart";
+import { PlaceEvolution } from "@/components/PlaceEvolution";
+import { DishRankings } from "@/components/DishRankings";
 import { PlaceActions } from "@/components/PlaceActions";
 
-export default async function PlaceDetailPage({
-  params,
-  searchParams,
-}: {
-  params: Promise<{ id: string }>;
-  searchParams: Promise<{ granularity?: string; order?: string }>;
-}) {
+export default async function PlaceDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { granularity: rawGranularity, order: rawOrder } = await searchParams;
-  const granularity = rawGranularity === "quarter" ? "quarter" : "month";
-  const order = rawOrder ?? "repeat";
 
   const supabase = await createClient();
   const {
@@ -79,7 +71,7 @@ export default async function PlaceDetailPage({
         />
       )}
 
-      {user ? <SignedInSections placeId={id} granularity={granularity} order={order} /> : <SignedOutSections placeId={id} />}
+      {user ? <SignedInSections placeId={id} userId={user.id} /> : <SignedOutSections placeId={id} />}
     </div>
   );
 }
@@ -124,15 +116,7 @@ async function SignedOutSections({ placeId }: { placeId: string }) {
   );
 }
 
-async function SignedInSections({
-  placeId,
-  granularity,
-  order,
-}: {
-  placeId: string;
-  granularity: "month" | "quarter";
-  order: string;
-}) {
+async function SignedInSections({ placeId, userId }: { placeId: string; userId: string }) {
   const supabase = await createClient();
 
   const today = new Date();
@@ -143,17 +127,17 @@ async function SignedInSections({
 
   // Everything below is computed by RLS over the visits this user is allowed to
   // read (their own, public ones, and those of people who let them see them).
-  const [{ data: stats }, { data: trend }, { data: timeseries }, { data: rankings }, { data: reviews }] =
+  const [{ data: stats }, { data: trend }, { data: timeseries }, { data: rankings }, { data: reviews }, { data: follows }] =
     await Promise.all([
       supabase.rpc("place_stats", { p_place_id: placeId }).single(),
       supabase.rpc("place_trend", { p_place_id: placeId }).single(),
       supabase.rpc("place_timeseries", {
         p_place_id: placeId,
-        p_granularity: granularity,
+        p_granularity: "month",
         p_from: fromStr,
         p_to: toStr,
       }),
-      supabase.rpc("dish_rankings_for_place", { p_place_id: placeId, p_order_by: order }),
+      supabase.rpc("dish_rankings_for_place", { p_place_id: placeId, p_order_by: "repeat" }),
       supabase
         .from("visits")
         .select("id, visited_on, place_rating, place_comment, profiles(username, display_name)")
@@ -161,7 +145,29 @@ async function SignedInSections({
         .not("place_rating", "is", null)
         .order("visited_on", { ascending: false })
         .limit(20),
+      supabase.from("follows").select("followee_id").eq("follower_id", userId),
     ]);
+
+  // RLS on `visits` already restricts this to rows each followee lets us see
+  // (public/followers/mutuals as applicable), so a followee who marks a
+  // review private or otherwise hides it from us is silently excluded here.
+  const followeeIds = follows?.map((f) => f.followee_id) ?? [];
+  let followeeAvg: { avg: number; n: number } | null = null;
+  if (followeeIds.length > 0) {
+    const { data: followeeVisits } = await supabase
+      .from("visits")
+      .select("place_rating")
+      .eq("place_id", placeId)
+      .in("user_id", followeeIds)
+      .not("place_rating", "is", null);
+    if (followeeVisits && followeeVisits.length > 0) {
+      const ratings = followeeVisits.map((v) => v.place_rating as number);
+      followeeAvg = {
+        avg: ratings.reduce((a, b) => a + b, 0) / ratings.length,
+        n: ratings.length,
+      };
+    }
+  }
 
   return (
     <>
@@ -177,72 +183,18 @@ async function SignedInSections({
         {trend && <TrendBadge status={trend.status as never} delta={trend.delta} />}
       </div>
 
-      <div className="mt-6">
-        <div className="mb-2 flex items-center justify-between">
-          <h2 className="text-sm font-semibold">Evolución de la valoración del sitio</h2>
-          <div className="flex gap-1 text-xs">
-            <Link
-              href={`?granularity=month&order=${order}`}
-              className={`rounded-full px-2 py-1 ${granularity === "month" ? "bg-accent text-white" : "bg-stone-100"}`}
-            >
-              Mensual
-            </Link>
-            <Link
-              href={`?granularity=quarter&order=${order}`}
-              className={`rounded-full px-2 py-1 ${granularity === "quarter" ? "bg-accent text-white" : "bg-stone-100"}`}
-            >
-              Trimestral
-            </Link>
+      {followeeAvg && (
+        <div className="mt-4 rounded-xl border border-stone-200 p-4">
+          <div className="text-lg font-medium">{followeeAvg.avg.toFixed(1)} · gente que sigues</div>
+          <div className="text-xs text-stone-500">
+            {followeeAvg.n} {followeeAvg.n === 1 ? "nota" : "notas"} de quien sigues y comparte su reseña contigo
           </div>
         </div>
-        {timeseries && timeseries.length > 0 ? (
-          <TimeseriesChart
-            data={timeseries}
-            series={[{ key: "avg_rating", movingAvgKey: "moving_avg_3", label: "Nota", color: "#c2410c" }]}
-            yDomain={[1, 5]}
-          />
-        ) : (
-          <p className="text-sm text-stone-400">Todavía no hay suficientes visitas valoradas.</p>
-        )}
-      </div>
+      )}
 
-      <div className="mt-8">
-        <div className="mb-2 flex items-center justify-between">
-          <h2 className="text-sm font-semibold">Platos</h2>
-          <div className="flex gap-1 text-xs">
-            {["repeat", "flavor", "trend"].map((o) => (
-              <Link
-                key={o}
-                href={`?granularity=${granularity}&order=${o}`}
-                className={`rounded-full px-2 py-1 ${order === o ? "bg-accent text-white" : "bg-stone-100"}`}
-              >
-                {o === "repeat" ? "% repetiría" : o === "flavor" ? "Sabor" : "Tendencia"}
-              </Link>
-            ))}
-          </div>
-        </div>
-        <ul className="flex flex-col gap-2">
-          {rankings?.map((d) => (
-            <li key={d.dish_id}>
-              <Link
-                href={`/dishes/${d.dish_id}`}
-                className="flex items-center justify-between rounded-lg border border-stone-200 px-4 py-3 hover:border-stone-400"
-              >
-                <div>
-                  <div className="font-medium">{d.dish_name}</div>
-                  <div className="text-xs text-stone-500">
-                    Sabor {d.recent_flavor ?? "—"} · {d.recent_repeat_pct ?? "—"}% repetiría · n={d.recent_n ?? 0}
-                  </div>
-                </div>
-                <TrendBadge status={(d.trend_status as never) ?? "insufficient_data"} delta={d.trend_delta} />
-              </Link>
-            </li>
-          ))}
-          {(!rankings || rankings.length === 0) && (
-            <p className="text-sm text-stone-400">Todavía no hay platos registrados en este sitio.</p>
-          )}
-        </ul>
-      </div>
+      <PlaceEvolution placeId={placeId} initialData={timeseries ?? []} />
+
+      <DishRankings placeId={placeId} initial={rankings ?? []} />
 
       <div className="mt-8">
         <h2 className="mb-2 text-sm font-semibold">Reseñas que puedes ver</h2>

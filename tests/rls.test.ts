@@ -65,7 +65,6 @@ describe("row level security", () => {
         dish_id: stableDishId,
         idea: 4,
         execution: 4,
-        flavor: 4,
         would_repeat: true,
       })
       .select("id")

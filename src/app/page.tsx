@@ -34,7 +34,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
     ? await supabase
         .from("visits")
         .select(
-          "id, visited_on, place_rating, place_comment, audience, places(id, name), profiles(username, display_name), dish_reviews(id, idea, execution, flavor, would_repeat, dishes(name))"
+          "id, visited_on, place_rating, place_comment, audience, places(id, name), profiles(username, display_name), dish_reviews(id, idea, execution, would_repeat, dishes(name))"
         )
         .in("user_id", followeeIds)
         .order("created_at", { ascending: false })
@@ -68,7 +68,9 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
         recommendations.length > 0 ? (
           <>
             <p className="mb-3 text-sm text-stone-500">
-              Sitios bien valorados por la gente que sigues y que aún no has visitado ni guardado.
+              {recommendations[0].source === "follows"
+                ? "Sitios bien valorados por la gente que sigues y que aún no has visitado ni guardado."
+                : "Sitios populares que aún no has visitado ni guardado."}
             </p>
             <ul className="flex flex-col gap-2">
               {recommendations.map((r) => (
@@ -87,7 +89,9 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
                     <div className="shrink-0 text-right">
                       <Stars value={r.avg} />
                       <div className="text-xs text-stone-400">
-                        {r.people} {r.people === 1 ? "persona" : "personas"} que sigues
+                        {r.source === "follows"
+                          ? `${r.people} ${r.people === 1 ? "persona" : "personas"} que sigues`
+                          : `${r.people} ${r.people === 1 ? "reseña" : "reseñas"}`}
                       </div>
                     </div>
                   </Link>
@@ -97,9 +101,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
           </>
         ) : (
           <p className="rounded-xl border border-dashed border-stone-300 px-4 py-8 text-center text-sm text-stone-500">
-            {followeeIds.length === 0
-              ? "Sigue a gente para recibir recomendaciones."
-              : "Todavía no hay sitios nuevos bien valorados por quien sigues."}
+            Todavía no hay sitios que recomendar.
           </p>
         )
       ) : followeeIds.length === 0 ? (

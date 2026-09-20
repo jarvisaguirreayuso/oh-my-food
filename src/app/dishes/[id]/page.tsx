@@ -37,18 +37,26 @@ export default async function DishDetailPage({
           {dish.places?.name}
         </Link>
       </p>
-      <h1 className="font-display mb-4 text-2xl font-bold">{dish.name}</h1>
+      <div className="mb-4 flex items-center gap-3">
+        {dish.photo_url && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={dish.photo_url} alt="" className="h-16 w-16 rounded-lg object-cover" />
+        )}
+        <div>
+          <h1 className="font-display text-2xl font-bold">{dish.name}</h1>
+          {dish.price != null && <p className="text-sm text-stone-500">{dish.price.toFixed(2)} €</p>}
+        </div>
+      </div>
 
       <div className="rounded-xl border border-stone-200 p-4">
         <div className="mb-2 text-sm font-medium text-stone-700">
           Media general{general ? ` · ${general.n} ${general.n === 1 ? "reseña" : "reseñas"}` : ""}
         </div>
         {general ? (
-          <div className="grid grid-cols-4 gap-2 text-center">
+          <div className="grid grid-cols-3 gap-2 text-center">
             {[
               { label: "Idea", value: general.avg_idea },
               { label: "Ejecución", value: general.avg_execution },
-              { label: "Sabor", value: general.avg_flavor },
               { label: "% Repetiría", value: general.repeat_pct },
             ].map((m) => (
               <div key={m.label}>
@@ -105,7 +113,7 @@ async function SignedInSections({ dishId, granularity }: { dishId: string; granu
     supabase
       .from("dish_reviews")
       .select(
-        "id, idea, execution, flavor, would_repeat, comment, visits(visited_on, profiles(username, display_name))"
+        "id, idea, execution, would_repeat, comment, visits(visited_on, profiles(username, display_name))"
       )
       .eq("dish_id", dishId)
       .order("created_at", { ascending: false })
@@ -119,11 +127,10 @@ async function SignedInSections({ dishId, granularity }: { dishId: string; granu
         {trend && <TrendBadge status={trend.status as never} delta={trend.delta} />}
       </div>
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="grid grid-cols-3 gap-3">
         {[
           { label: "Idea", recent: stats?.recent_idea, hist: stats?.historical_idea },
           { label: "Ejecución", recent: stats?.recent_execution, hist: stats?.historical_execution },
-          { label: "Sabor", recent: stats?.recent_flavor, hist: stats?.historical_flavor },
           { label: "% Repetiría", recent: stats?.recent_repeat_pct, hist: stats?.historical_repeat_pct },
         ].map((m) => (
           <div key={m.label} className="rounded-xl border border-stone-200 p-3 text-center">
@@ -163,7 +170,6 @@ async function SignedInSections({ dishId, granularity }: { dishId: string; granu
               series={[
                 { key: "avg_idea", movingAvgKey: "moving_avg_idea", label: "Idea", color: "#0369a1" },
                 { key: "avg_execution", movingAvgKey: "moving_avg_execution", label: "Ejecución", color: "#b45309" },
-                { key: "avg_flavor", movingAvgKey: "moving_avg_flavor", label: "Sabor", color: "#c2410c" },
               ]}
               yDomain={[1, 5]}
             />
@@ -201,7 +207,7 @@ async function SignedInSections({ dishId, granularity }: { dishId: string; granu
                   <span>{r.visits?.visited_on}</span>
                 </div>
                 <div className="mt-1 text-sm">
-                  Idea {r.idea} · Ejecución {r.execution} · Sabor {r.flavor} ·{" "}
+                  Idea {r.idea} · Ejecución {r.execution} ·{" "}
                   {r.would_repeat ? "repetiría" : "no repetiría"}
                 </div>
                 {r.comment && <p className="mt-1 text-sm text-stone-700">{r.comment}</p>}

@@ -1,5 +1,20 @@
 "use client";
 
+function Belly({ active }: { active: boolean }) {
+  return (
+    <svg viewBox="0 0 24 24" className="h-6 w-6" aria-hidden="true">
+      <ellipse
+        cx="12"
+        cy="13"
+        rx="9"
+        ry="8"
+        className={active ? "fill-accent" : "fill-stone-200"}
+      />
+      <circle cx="12" cy="14" r="1.4" className={active ? "fill-white/80" : "fill-stone-400"} />
+    </svg>
+  );
+}
+
 export function RatingSelect({
   label,
   value,
@@ -18,11 +33,10 @@ export function RatingSelect({
             key={n}
             type="button"
             onClick={() => onChange(n)}
-            className={`h-8 w-8 rounded-full text-sm font-medium ${
-              n <= value ? "bg-accent text-white" : "bg-stone-100 text-stone-500"
-            }`}
+            aria-label={`${n}`}
+            className="rounded-full p-0.5"
           >
-            {n}
+            <Belly active={n <= value} />
           </button>
         ))}
       </div>

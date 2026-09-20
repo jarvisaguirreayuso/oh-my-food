@@ -28,7 +28,7 @@ export default async function UserProfilePage({ params }: { params: Promise<{ us
     supabase
       .from("visits")
       .select(
-        "id, visited_on, place_rating, place_comment, audience, places(id, name), dish_reviews(id, idea, execution, flavor, would_repeat, dishes(name))"
+        "id, visited_on, place_rating, place_comment, audience, places(id, name), dish_reviews(id, idea, execution, would_repeat, dishes(name))"
       )
       .eq("user_id", profile.id)
       .order("visited_on", { ascending: false })

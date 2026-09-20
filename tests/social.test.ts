@@ -69,7 +69,6 @@ describe("visit audiences (single reading rule)", () => {
           place_rating: 5,
           place_comment: `social fixture ${audience}`,
           audience,
-          pools_publicly: audience !== "private",
         })
         .select("id")
         .single();
@@ -78,7 +77,7 @@ describe("visit audiences (single reading rule)", () => {
 
       const { data: review, error: reviewErr } = await ana
         .from("dish_reviews")
-        .insert({ visit_id: visit.id, dish_id: dishId, idea: 5, execution: 5, flavor: 5, would_repeat: true })
+        .insert({ visit_id: visit.id, dish_id: dishId, idea: 5, execution: 5, would_repeat: true })
         .select("id")
         .single();
       if (reviewErr || !review) throw reviewErr ?? new Error(`review ${audience} failed`);
@@ -272,7 +271,7 @@ describe("general scores (the only security definer surface)", () => {
     if (created.length) await ana.from("visits").delete().in("id", created);
   });
 
-  const addVisit = async (day: string, audience: Audience, pools: boolean) => {
+  const addVisit = async (day: string, audience: Audience) => {
     const { data, error } = await ana
       .from("visits")
       .insert({
@@ -281,7 +280,6 @@ describe("general scores (the only security definer surface)", () => {
         visited_on: day,
         place_rating: 5,
         audience,
-        pools_publicly: pools,
       })
       .select("id")
       .single();
@@ -289,7 +287,7 @@ describe("general scores (the only security definer surface)", () => {
     created.push(data!.id);
     await ana
       .from("dish_reviews")
-      .insert({ visit_id: data!.id, dish_id: dishId, idea: 5, execution: 5, flavor: 5, would_repeat: true });
+      .insert({ visit_id: data!.id, dish_id: dishId, idea: 5, execution: 5, would_repeat: true });
     return data!.id;
   };
 
@@ -299,21 +297,21 @@ describe("general scores (the only security definer surface)", () => {
     expect(Object.keys(row!).sort()).toEqual(["avg_rating", "n", "place_id"]);
   });
 
-  it("counts pooled visits whatever their audience, and never private ones", async () => {
+  it("counts every non-private visit, and never private ones", async () => {
     const base = (await general(client()))!.n;
-    await addVisit("2018-03-01", "followers", true);
-    await addVisit("2018-03-02", "mutuals", true);
-    await addVisit("2018-03-03", "followers", false); // journal: doesn't pool
-    await addVisit("2018-03-04", "private", false);
-    // Only the two pooled ones are added, and anon sees the same number as ana.
-    expect((await general(client()))!.n).toBe(base + 2);
-    expect((await general(ana))!.n).toBe(base + 2);
+    await addVisit("2018-03-01", "followers");
+    await addVisit("2018-03-02", "mutuals");
+    await addVisit("2018-03-03", "public");
+    await addVisit("2018-03-04", "private");
+    // Only the three non-private ones are added, and anon sees the same number as ana.
+    expect((await general(client()))!.n).toBe(base + 3);
+    expect((await general(ana))!.n).toBe(base + 3);
   });
 
   it("exposes dish general scores with aggregates only", async () => {
     const { data, error } = await client().rpc("dish_general_scores", { p_dish_ids: [dishId] });
     expect(error).toBeNull();
-    expect(Object.keys(data![0]).sort()).toEqual(["avg_execution", "avg_flavor", "avg_idea", "dish_id", "n", "repeat_pct"]);
+    expect(Object.keys(data![0]).sort()).toEqual(["avg_execution", "avg_idea", "dish_id", "n", "repeat_pct"]);
   });
 
   it("refuses oversized id lists instead of becoming a bulk scanner", async () => {
@@ -343,7 +341,7 @@ describe("visit audience rules and save_visit", () => {
     if (created.length) await ana.from("visits").delete().in("id", created);
   });
 
-  const save = async (day: string, args: { audience?: Audience; pools?: boolean }) => {
+  const save = async (day: string, args: { audience?: Audience }) => {
     const { data, error } = await ana.rpc("save_visit", {
       p_place_id: PLACE,
       p_visited_on: day,
@@ -351,7 +349,6 @@ describe("visit audience rules and save_visit", () => {
       p_place_comment: "save_visit test",
       p_dishes: [],
       ...(args.audience ? { p_audience: args.audience } : {}),
-      ...(args.pools !== undefined ? { p_pools_publicly: args.pools } : {}),
     });
     expect(error).toBeNull();
     created.push(data as string);
@@ -363,20 +360,20 @@ describe("visit audience rules and save_visit", () => {
     expect(await save("2017-01-01", {})).toEqual({ audience: "followers", pools_publicly: true });
   });
 
-  it("stores an explicit audience and pooling choice", async () => {
-    expect(await save("2017-01-02", { audience: "public", pools: false })).toEqual({ audience: "public", pools_publicly: false });
+  it("stores an explicit audience; pooling is derived automatically", async () => {
+    expect(await save("2017-01-02", { audience: "public" })).toEqual({ audience: "public", pools_publicly: true });
   });
 
-  it("forces private visits out of the general average, even if asked to pool", async () => {
-    expect(await save("2017-01-03", { audience: "private", pools: true })).toEqual({ audience: "private", pools_publicly: false });
+  it("forces private visits out of the general average", async () => {
+    expect(await save("2017-01-03", { audience: "private" })).toEqual({ audience: "private", pools_publicly: false });
   });
 
   it("keeps the audience unchanged when an update doesn't specify one", async () => {
-    await save("2017-01-04", { audience: "mutuals", pools: false });
-    expect(await save("2017-01-04", {})).toEqual({ audience: "mutuals", pools_publicly: false });
+    await save("2017-01-04", { audience: "mutuals" });
+    expect(await save("2017-01-04", {})).toEqual({ audience: "mutuals", pools_publicly: true });
   });
 
-  it("rejects, at the table level, a private visit that pools (no anonymous reviews yet)", async () => {
+  it("rejects any attempt to set pools_publicly directly (it's derived from audience)", async () => {
     const { error } = await ana.from("visits").insert({
       user_id: SEED_USERS.ana.id,
       place_id: PLACE,
@@ -384,8 +381,8 @@ describe("visit audience rules and save_visit", () => {
       place_rating: 3,
       audience: "private",
       pools_publicly: true,
-    });
-    expect(error?.code).toBe("23514");
+    } as never);
+    expect(error).not.toBeNull();
   });
 });
 

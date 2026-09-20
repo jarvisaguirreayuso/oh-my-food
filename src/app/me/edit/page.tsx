@@ -17,7 +17,7 @@ export default async function EditProfilePage({
 
   const [{ data: profile }, { data: settings }] = await Promise.all([
     supabase.from("profiles").select("username, display_name, bio").eq("id", user.id).single(),
-    supabase.from("profile_settings").select("default_audience, default_pools_publicly").eq("user_id", user.id).maybeSingle(),
+    supabase.from("profile_settings").select("default_audience").eq("user_id", user.id).maybeSingle(),
   ]);
   if (!profile) redirect("/auth/login");
 
@@ -39,7 +39,6 @@ export default async function EditProfilePage({
         displayName={profile.display_name ?? ""}
         bio={profile.bio ?? ""}
         defaultAudience={settings?.default_audience ?? "followers"}
-        defaultPoolsPublicly={settings?.default_pools_publicly ?? true}
       />
     </div>
   );

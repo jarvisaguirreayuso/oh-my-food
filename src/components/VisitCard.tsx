@@ -14,7 +14,6 @@ export type VisitCardData = {
     id: string;
     idea: number;
     execution: number;
-    flavor: number;
     would_repeat: boolean;
     dishes: { name: string } | null;
   }>;
@@ -59,7 +58,7 @@ export function VisitCard({
         <ul className="mt-2 flex flex-col gap-1 border-t pt-2 text-sm">
           {visit.dish_reviews.map((dr) => (
             <li key={dr.id} className="text-stone-600">
-              {dr.dishes?.name}: idea {dr.idea}, ejecución {dr.execution}, sabor {dr.flavor}
+              {dr.dishes?.name}: idea {dr.idea}, ejecución {dr.execution}
               {dr.would_repeat ? " · repetiría" : " · no repetiría"}
             </li>
           ))}

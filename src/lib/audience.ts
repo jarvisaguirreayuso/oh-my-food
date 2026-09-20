@@ -16,5 +16,3 @@ export const AUDIENCE_LABELS: Record<Audience, string> = {
   mutuals: "Amigos",
   private: "Solo yo",
 };
-
-export const POOLS_LABEL = "Sumar mi nota a la media general del sitio (sin tu nombre)";
