@@ -6,6 +6,7 @@ import { TrendBadge } from "@/components/TrendBadge";
 import { PlaceEvolution } from "@/components/PlaceEvolution";
 import { DishRankings } from "@/components/DishRankings";
 import { PlaceActions } from "@/components/PlaceActions";
+import { FriendsRatings } from "@/components/FriendsRatings";
 
 export default async function PlaceDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -153,14 +154,23 @@ async function SignedInSections({ placeId, userId }: { placeId: string; userId: 
   // review private or otherwise hides it from us is silently excluded here.
   const followeeIds = follows?.map((f) => f.followee_id) ?? [];
   let followeeAvg: { avg: number; n: number } | null = null;
+  let followeeVisits: Array<{
+    id: string;
+    visited_on: string;
+    place_rating: number | null;
+    place_comment: string | null;
+    profiles: { username: string; display_name: string | null } | null;
+  }> = [];
   if (followeeIds.length > 0) {
-    const { data: followeeVisits } = await supabase
+    const { data } = await supabase
       .from("visits")
-      .select("place_rating")
+      .select("id, visited_on, place_rating, place_comment, profiles(username, display_name)")
       .eq("place_id", placeId)
       .in("user_id", followeeIds)
-      .not("place_rating", "is", null);
-    if (followeeVisits && followeeVisits.length > 0) {
+      .not("place_rating", "is", null)
+      .order("visited_on", { ascending: false });
+    followeeVisits = data ?? [];
+    if (followeeVisits.length > 0) {
       const ratings = followeeVisits.map((v) => v.place_rating as number);
       followeeAvg = {
         avg: ratings.reduce((a, b) => a + b, 0) / ratings.length,
@@ -171,26 +181,22 @@ async function SignedInSections({ placeId, userId }: { placeId: string; userId: 
 
   return (
     <>
-      <div className="mt-4 flex items-end gap-4 rounded-xl border border-stone-200 p-4">
-        <div>
-          <div className="text-4xl font-bold">{stats?.recent_avg ?? "—"}</div>
-          <div className="text-xs text-stone-500">lo que ves tú · reciente (12 meses) · n={stats?.recent_n ?? 0}</div>
+      <div className="mt-4 rounded-xl border border-stone-200 p-4">
+        <div className="flex items-end gap-4">
+          <div>
+            <div className="text-4xl font-bold">{stats?.recent_avg ?? "—"}</div>
+            <div className="text-xs text-stone-500">Tu media · últimos 12 meses · n={stats?.recent_n ?? 0}</div>
+          </div>
+          <div>
+            <div className="text-lg font-medium text-stone-500">{stats?.historical_avg ?? "—"}</div>
+            <div className="text-xs text-stone-400">histórica · n={stats?.historical_n ?? 0}</div>
+          </div>
+          {trend && <TrendBadge status={trend.status as never} delta={trend.delta} />}
         </div>
-        <div>
-          <div className="text-lg font-medium text-stone-500">{stats?.historical_avg ?? "—"}</div>
-          <div className="text-xs text-stone-400">histórica · n={stats?.historical_n ?? 0}</div>
-        </div>
-        {trend && <TrendBadge status={trend.status as never} delta={trend.delta} />}
+        <p className="mt-2 text-xs text-stone-400">Incluye tu nota y las de quien comparte la suya contigo.</p>
       </div>
 
-      {followeeAvg && (
-        <div className="mt-4 rounded-xl border border-stone-200 p-4">
-          <div className="text-lg font-medium">{followeeAvg.avg.toFixed(1)} · gente que sigues</div>
-          <div className="text-xs text-stone-500">
-            {followeeAvg.n} {followeeAvg.n === 1 ? "nota" : "notas"} de quien sigues y comparte su reseña contigo
-          </div>
-        </div>
-      )}
+      {followeeAvg && <FriendsRatings avg={followeeAvg.avg} visits={followeeVisits} />}
 
       <PlaceEvolution placeId={placeId} initialData={timeseries ?? []} />
 

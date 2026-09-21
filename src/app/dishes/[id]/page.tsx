@@ -38,16 +38,20 @@ export default async function DishDetailPage({
           {dish.places?.name}
         </Link>
       </p>
-      <div className="mb-4 flex items-center gap-3">
+      <div className="mb-4">
         {user ? (
-          <DishPhotoUploader dishId={dish.id} initialPhotoUrl={dish.photo_url} />
+          <DishPhotoUploader dishId={dish.id} initialPhotoUrl={dish.photo_url} size="lg" />
         ) : (
           dish.photo_url && (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={dish.photo_url} alt="" className="h-16 w-16 rounded-lg object-cover" />
+            <img
+              src={dish.photo_url}
+              alt=""
+              className="aspect-[4/3] w-full rounded-xl object-cover"
+            />
           )
         )}
-        <div>
+        <div className="mt-3">
           <h1 className="font-display text-2xl font-bold">{dish.name}</h1>
           {dish.price != null && <p className="text-sm text-stone-500">{dish.price.toFixed(2)} €</p>}
         </div>
