@@ -36,11 +36,16 @@ export function PlaceActions({
             <input type="hidden" name="placeId" value={placeId} />
             <select
               name="listId"
+              required
+              defaultValue=""
               aria-label="Añadir a una lista"
-              className="rounded-full border border-stone-300 bg-white px-3 py-1.5 text-sm"
+              className="rounded-full border border-stone-300 bg-white px-3 py-1.5 text-sm text-stone-500"
             >
+              <option value="" disabled>
+                Añadir a una lista…
+              </option>
               {available.map((l) => (
-                <option key={l.id} value={l.id}>
+                <option key={l.id} value={l.id} className="text-stone-900">
                   {l.name}
                 </option>
               ))}

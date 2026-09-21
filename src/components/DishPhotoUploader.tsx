@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 // stays well under the storage bucket's size cap.
 async function compressImage(file: File): Promise<Blob> {
   const bitmap = await createImageBitmap(file);
-  const maxSide = 480;
+  const maxSide = 800;
   const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
   const canvas = document.createElement("canvas");
   canvas.width = Math.round(bitmap.width * scale);
@@ -35,7 +35,7 @@ export function DishPhotoUploader({
 }: {
   dishId: string;
   initialPhotoUrl?: string | null;
-  size?: "sm" | "md";
+  size?: "sm" | "md" | "lg";
 }) {
   const [photoUrl, setPhotoUrl] = useState<string | null | undefined>(initialPhotoUrl);
   const [uploading, setUploading] = useState(false);
@@ -79,12 +79,33 @@ export function DishPhotoUploader({
 
   if (photoUrl === undefined) return null;
 
-  const dims = size === "sm" ? "h-12 w-12" : "h-16 w-16";
+  const dims = size === "sm" ? "h-12 w-12" : size === "lg" ? "aspect-[4/3] w-full" : "h-16 w-16";
 
   if (photoUrl) {
     return (
       // eslint-disable-next-line @next/next/no-img-element
-      <img src={photoUrl} alt="" className={`${dims} rounded-lg object-cover`} />
+      <img src={photoUrl} alt="" className={`${dims} rounded-xl object-cover`} />
+    );
+  }
+
+  if (size === "lg") {
+    return (
+      <label
+        className={`flex ${dims} cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-stone-300 bg-stone-50 text-sm text-stone-500`}
+      >
+        <span className="text-2xl">📷</span>
+        {uploading ? "Subiendo…" : "Añadir foto del plato"}
+        <input
+          type="file"
+          accept="image/*"
+          className="hidden"
+          disabled={uploading}
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) void handleUpload(file);
+          }}
+        />
+      </label>
     );
   }
 

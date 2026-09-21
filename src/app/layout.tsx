@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { Fraunces, Geist, Geist_Mono } from "next/font/google";
-import Link from "next/link";
 import "./globals.css";
 import { createClient } from "@/lib/supabase/server";
 import { BottomNav } from "@/components/BottomNav";
+import { HeaderNav } from "@/components/HeaderNav";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -38,21 +38,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="flex min-h-full flex-col bg-white text-stone-900">
         <header className="sticky top-0 z-10 border-b bg-white/90 backdrop-blur">
-          <div className="mx-auto flex max-w-2xl items-center justify-between px-4 py-3">
-            <Link href="/" className="text-lg font-bold">
-              🍽️ oh my food
-            </Link>
-            {!user && (
-              <nav className="flex items-center gap-3 text-sm">
-                <Link href="/explore" className="text-stone-600">
-                  Buscar
-                </Link>
-                <Link href="/auth/login" className="font-medium">
-                  Entrar
-                </Link>
-              </nav>
-            )}
-          </div>
+          <HeaderNav signedIn={Boolean(user)} />
         </header>
         <main className={`flex-1 ${user ? "pb-24" : ""}`}>{children}</main>
         {user && <BottomNav />}
