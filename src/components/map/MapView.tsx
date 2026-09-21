@@ -44,7 +44,12 @@ function FitBounds({ places }: { places: MapPlace[] }) {
 
 export default function MapView({ places }: { places: MapPlace[] }) {
   return (
-    <MapContainer center={MADRID} zoom={12} scrollWheelZoom className="h-[62vh] w-full rounded-xl border border-stone-200">
+    <MapContainer
+      center={MADRID}
+      zoom={12}
+      scrollWheelZoom
+      className="isolate h-[62vh] w-full rounded-xl border border-stone-200"
+    >
       {/* Public OpenStreetMap tiles: free, no key, fine for a closed beta. Their usage policy
           doesn't allow heavy production traffic, so swap for a keyed provider before launch. */}
       <TileLayer
