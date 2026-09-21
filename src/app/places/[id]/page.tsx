@@ -2,11 +2,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { TYPE_LABELS, getPlaceGeneralScores } from "@/lib/places";
-import { TrendBadge } from "@/components/TrendBadge";
 import { PlaceEvolution } from "@/components/PlaceEvolution";
 import { DishRankings } from "@/components/DishRankings";
-import { PlaceActions } from "@/components/PlaceActions";
-import { FriendsRatings } from "@/components/FriendsRatings";
+import { PlaceHeaderActions } from "@/components/PlaceHeaderActions";
+import { PlaceStatSquares } from "@/components/PlaceStatSquares";
 
 export default async function PlaceDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -19,16 +18,45 @@ export default async function PlaceDetailPage({ params }: { params: Promise<{ id
   const { data: place } = await supabase.from("places").select("*").eq("id", id).single();
   if (!place) notFound();
 
-  const general = (await getPlaceGeneralScores(supabase, [id])).get(id);
+  const general = (await getPlaceGeneralScores(supabase, [id])).get(id) ?? null;
 
-  // "Quiero ir" and the user's lists (all private to them, so RLS returns only their own).
-  const [saved, lists, memberships] = user
+  // "Quiero ir", the user's lists, and who they follow are all private to them,
+  // so RLS returns only their own rows here.
+  const [saved, lists, memberships, follows] = user
     ? await Promise.all([
         supabase.from("saved_places").select("place_id").eq("user_id", user.id).eq("place_id", id).maybeSingle(),
         supabase.from("place_lists").select("id, name").order("name"),
         supabase.from("place_list_items").select("list_id").eq("place_id", id),
+        supabase.from("follows").select("followee_id").eq("follower_id", user.id),
       ])
-    : [null, null, null];
+    : [null, null, null, null];
+
+  // RLS on `visits` already restricts this to rows each followee lets us see
+  // (public/followers/mutuals as applicable), so a followee who marks a
+  // review private or otherwise hides it from us is silently excluded here.
+  const followeeIds = follows?.data?.map((f) => f.followee_id) ?? [];
+  type FriendVisit = {
+    id: string;
+    visited_on: string;
+    place_rating: number | null;
+    place_comment: string | null;
+    profiles: { username: string; display_name: string | null } | null;
+  };
+  let friends: { avg: number; n: number; visits: FriendVisit[] } | null = null;
+  if (followeeIds.length > 0) {
+    const { data } = await supabase
+      .from("visits")
+      .select("id, visited_on, place_rating, place_comment, profiles(username, display_name)")
+      .eq("place_id", id)
+      .in("user_id", followeeIds)
+      .not("place_rating", "is", null)
+      .order("visited_on", { ascending: false });
+    const followeeVisits: FriendVisit[] = data ?? [];
+    if (followeeVisits.length > 0) {
+      const ratings = followeeVisits.map((v) => v.place_rating as number);
+      friends = { avg: ratings.reduce((a, b) => a + b, 0) / ratings.length, n: ratings.length, visits: followeeVisits };
+    }
+  }
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-6">
@@ -41,38 +69,18 @@ export default async function PlaceDetailPage({ params }: { params: Promise<{ id
           </p>
         </div>
         {user && (
-          <Link
-            href={`/visits/new?place=${place.id}`}
-            className="shrink-0 rounded-lg bg-accent px-3 py-2 text-xs font-medium text-white"
-          >
-            Registrar visita
-          </Link>
+          <PlaceHeaderActions
+            placeId={id}
+            saved={Boolean(saved?.data)}
+            lists={lists?.data ?? []}
+            memberOf={memberships?.data?.map((m) => m.list_id) ?? []}
+          />
         )}
       </div>
 
-      <div className="mt-4 rounded-xl border border-stone-200 p-4">
-        <div className="flex items-end gap-3">
-          <div className="text-4xl font-bold">{general?.avg != null ? general.avg.toFixed(1) : "—"}</div>
-          <div className="pb-1 text-sm text-stone-500">
-            <div className="font-medium text-stone-700">Media general</div>
-            {general ? `${general.n} ${general.n === 1 ? "nota" : "notas"}` : "Todavía sin notas"}
-          </div>
-        </div>
-        <p className="mt-2 text-xs text-stone-400">
-          Suma las notas que la gente ha querido contar, sin nombres.
-        </p>
-      </div>
+      <PlaceStatSquares general={general} friends={friends} signedIn={Boolean(user)} />
 
-      {user && (
-        <PlaceActions
-          placeId={id}
-          saved={Boolean(saved?.data)}
-          lists={lists?.data ?? []}
-          memberOf={memberships?.data?.map((m) => m.list_id) ?? []}
-        />
-      )}
-
-      {user ? <SignedInSections placeId={id} userId={user.id} /> : <SignedOutSections placeId={id} />}
+      {user ? <SignedInSections placeId={id} /> : <SignedOutSections placeId={id} />}
     </div>
   );
 }
@@ -117,7 +125,7 @@ async function SignedOutSections({ placeId }: { placeId: string }) {
   );
 }
 
-async function SignedInSections({ placeId, userId }: { placeId: string; userId: string }) {
+async function SignedInSections({ placeId }: { placeId: string }) {
   const supabase = await createClient();
 
   const today = new Date();
@@ -128,76 +136,25 @@ async function SignedInSections({ placeId, userId }: { placeId: string; userId: 
 
   // Everything below is computed by RLS over the visits this user is allowed to
   // read (their own, public ones, and those of people who let them see them).
-  const [{ data: stats }, { data: trend }, { data: timeseries }, { data: rankings }, { data: reviews }, { data: follows }] =
-    await Promise.all([
-      supabase.rpc("place_stats", { p_place_id: placeId }).single(),
-      supabase.rpc("place_trend", { p_place_id: placeId }).single(),
-      supabase.rpc("place_timeseries", {
-        p_place_id: placeId,
-        p_granularity: "month",
-        p_from: fromStr,
-        p_to: toStr,
-      }),
-      supabase.rpc("dish_rankings_for_place", { p_place_id: placeId, p_order_by: "repeat" }),
-      supabase
-        .from("visits")
-        .select("id, visited_on, place_rating, place_comment, profiles(username, display_name)")
-        .eq("place_id", placeId)
-        .not("place_rating", "is", null)
-        .order("visited_on", { ascending: false })
-        .limit(20),
-      supabase.from("follows").select("followee_id").eq("follower_id", userId),
-    ]);
-
-  // RLS on `visits` already restricts this to rows each followee lets us see
-  // (public/followers/mutuals as applicable), so a followee who marks a
-  // review private or otherwise hides it from us is silently excluded here.
-  const followeeIds = follows?.map((f) => f.followee_id) ?? [];
-  let followeeAvg: { avg: number; n: number } | null = null;
-  let followeeVisits: Array<{
-    id: string;
-    visited_on: string;
-    place_rating: number | null;
-    place_comment: string | null;
-    profiles: { username: string; display_name: string | null } | null;
-  }> = [];
-  if (followeeIds.length > 0) {
-    const { data } = await supabase
+  const [{ data: timeseries }, { data: rankings }, { data: reviews }] = await Promise.all([
+    supabase.rpc("place_timeseries", {
+      p_place_id: placeId,
+      p_granularity: "month",
+      p_from: fromStr,
+      p_to: toStr,
+    }),
+    supabase.rpc("dish_rankings_for_place", { p_place_id: placeId, p_order_by: "repeat" }),
+    supabase
       .from("visits")
       .select("id, visited_on, place_rating, place_comment, profiles(username, display_name)")
       .eq("place_id", placeId)
-      .in("user_id", followeeIds)
       .not("place_rating", "is", null)
-      .order("visited_on", { ascending: false });
-    followeeVisits = data ?? [];
-    if (followeeVisits.length > 0) {
-      const ratings = followeeVisits.map((v) => v.place_rating as number);
-      followeeAvg = {
-        avg: ratings.reduce((a, b) => a + b, 0) / ratings.length,
-        n: ratings.length,
-      };
-    }
-  }
+      .order("visited_on", { ascending: false })
+      .limit(20),
+  ]);
 
   return (
     <>
-      <div className="mt-4 rounded-xl border border-stone-200 p-4">
-        <div className="flex items-end gap-4">
-          <div>
-            <div className="text-4xl font-bold">{stats?.recent_avg ?? "—"}</div>
-            <div className="text-xs text-stone-500">Tu media · últimos 12 meses · n={stats?.recent_n ?? 0}</div>
-          </div>
-          <div>
-            <div className="text-lg font-medium text-stone-500">{stats?.historical_avg ?? "—"}</div>
-            <div className="text-xs text-stone-400">histórica · n={stats?.historical_n ?? 0}</div>
-          </div>
-          {trend && <TrendBadge status={trend.status as never} delta={trend.delta} />}
-        </div>
-        <p className="mt-2 text-xs text-stone-400">Incluye tu nota y las de quien comparte la suya contigo.</p>
-      </div>
-
-      {followeeAvg && <FriendsRatings avg={followeeAvg.avg} visits={followeeVisits} />}
-
       <PlaceEvolution placeId={placeId} initialData={timeseries ?? []} />
 
       <DishRankings placeId={placeId} initial={rankings ?? []} />
