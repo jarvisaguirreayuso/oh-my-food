@@ -4,6 +4,7 @@ import { getPlaceGeneralScores, TYPE_LABELS } from "@/lib/places";
 import { PlaceList } from "@/components/PlaceList";
 import { Chip } from "@/components/ui/Chip";
 import { MapLoader, type MapPlace } from "@/components/map/MapLoader";
+import { MapFiltersSheet } from "@/components/map/MapFiltersSheet";
 
 type State = "all" | "visited" | "saved";
 
@@ -90,47 +91,29 @@ export default async function MapPage({
     <div className="mx-auto max-w-2xl px-4 py-4">
       <div className="mb-3 flex items-center justify-between gap-3">
         <h1 className="font-display text-lg font-semibold">Mapa</h1>
-        <div className="flex gap-1">
-          <Chip href={href({ view: null })} active={view === "map"}>
-            Mapa
-          </Chip>
-          <Chip href={href({ view: "list" })} active={view === "list"}>
-            Lista
-          </Chip>
+        <div className="flex items-center gap-2">
+          {(user || typesPresent.length > 1) && (
+            <MapFiltersSheet
+              state={state}
+              listId={listId}
+              view={view}
+              type={type}
+              lists={lists}
+              typesPresent={typesPresent}
+              typeLabels={TYPE_LABELS}
+              showStateList={Boolean(user)}
+            />
+          )}
+          <div className="flex gap-1">
+            <Chip href={href({ view: null })} active={view === "map"}>
+              Mapa
+            </Chip>
+            <Chip href={href({ view: "list" })} active={view === "list"}>
+              Lista
+            </Chip>
+          </div>
         </div>
       </div>
-
-      {user && (
-        <div className="-mx-4 mb-3 flex gap-2 overflow-x-auto px-4 pb-1">
-          <Chip href={href({ state: null })} active={state === "all"}>
-            Todos
-          </Chip>
-          <Chip href={href({ state: "visited" })} active={state === "visited"}>
-            ✓ Visitados
-          </Chip>
-          <Chip href={href({ state: "saved" })} active={state === "saved"}>
-            🔖 Quiero ir
-          </Chip>
-          {lists.map((l) => (
-            <Chip key={l.id} href={href({ list: l.id === listId ? null : l.id })} active={l.id === listId}>
-              {l.name}
-            </Chip>
-          ))}
-        </div>
-      )}
-
-      {typesPresent.length > 1 && (
-        <div className="-mx-4 mb-3 flex gap-2 overflow-x-auto px-4 pb-1">
-          <Chip href={href({ type: null })} active={!type}>
-            Todos los tipos
-          </Chip>
-          {typesPresent.map((t) => (
-            <Chip key={t} href={href({ type: t === type ? null : t })} active={t === type}>
-              {TYPE_LABELS[t]}
-            </Chip>
-          ))}
-        </div>
-      )}
 
       {view === "map" ? (
         <>
