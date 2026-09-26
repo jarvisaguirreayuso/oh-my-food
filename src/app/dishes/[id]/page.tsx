@@ -1,9 +1,11 @@
+import { Suspense } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getDesignComponents } from "@/lib/design-components";
 import { TrendBadge } from "@/components/TrendBadge";
 import { TimeseriesChart } from "@/components/TimeseriesChart";
-import { DishPhotoUploader } from "@/components/DishPhotoUploader";
 
 export default async function DishDetailPage({
   params,
@@ -30,6 +32,7 @@ export default async function DishDetailPage({
 
   const { data: generalRows } = await supabase.rpc("dish_general_scores", { p_dish_ids: [id] });
   const general = generalRows?.[0];
+  const { DishHeader } = await getDesignComponents();
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-6">
@@ -38,24 +41,10 @@ export default async function DishDetailPage({
           {dish.places?.name}
         </Link>
       </p>
-      <div className="mb-4">
-        {user ? (
-          <DishPhotoUploader dishId={dish.id} initialPhotoUrl={dish.photo_url} size="lg" />
-        ) : (
-          dish.photo_url && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={dish.photo_url}
-              alt=""
-              className="aspect-[4/3] w-full rounded-xl object-cover"
-            />
-          )
-        )}
-        <div className="mt-3">
-          <h1 className="font-display text-2xl font-bold">{dish.name}</h1>
-          {dish.price != null && <p className="text-sm text-stone-500">{dish.price.toFixed(2)} €</p>}
-        </div>
-      </div>
+      <DishHeader
+        dish={{ id: dish.id, name: dish.name, price: dish.price, photoUrl: dish.photo_url }}
+        canEdit={Boolean(user)}
+      />
 
       <div className="rounded-xl border border-stone-200 p-4">
         <div className="mb-2 text-sm font-medium text-stone-700">
@@ -81,7 +70,9 @@ export default async function DishDetailPage({
       </div>
 
       {user ? (
-        <SignedInSections dishId={id} granularity={granularity} />
+        <Suspense fallback={<SignedInSectionsSkeleton />}>
+          <SignedInSections dishId={id} granularity={granularity} />
+        </Suspense>
       ) : (
         <div className="mt-6 rounded-xl bg-stone-50 px-4 py-4">
           <p className="font-medium">Mira la evolución y lo que opina tu gente</p>
@@ -122,7 +113,7 @@ async function SignedInSections({ dishId, granularity }: { dishId: string; granu
     supabase
       .from("dish_reviews")
       .select(
-        "id, idea, execution, would_repeat, comment, visits(visited_on, profiles(username, display_name))"
+        "id, idea, execution, would_repeat, comment, photo_url, visits(visited_on, profiles(username, display_name))"
       )
       .eq("dish_id", dishId)
       .order("created_at", { ascending: false })
@@ -205,21 +196,30 @@ async function SignedInSections({ dishId, granularity }: { dishId: string; granu
             const author = r.visits?.profiles;
             return (
               <li key={r.id} className="rounded-lg border border-stone-200 px-4 py-3">
-                <div className="flex items-center justify-between text-xs text-stone-500">
-                  {author ? (
-                    <Link href={`/u/${author.username}`} className="font-medium text-stone-800">
-                      {author.display_name || `@${author.username}`}
-                    </Link>
-                  ) : (
-                    <span>Usuario</span>
+                <div className="flex gap-3">
+                  {r.photo_url && (
+                    <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg">
+                      <Image src={r.photo_url} alt="" fill sizes="64px" className="object-cover" />
+                    </div>
                   )}
-                  <span>{r.visits?.visited_on}</span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between text-xs text-stone-500">
+                      {author ? (
+                        <Link href={`/u/${author.username}`} className="font-medium text-stone-800">
+                          {author.display_name || `@${author.username}`}
+                        </Link>
+                      ) : (
+                        <span>Usuario</span>
+                      )}
+                      <span>{r.visits?.visited_on}</span>
+                    </div>
+                    <div className="mt-1 text-sm">
+                      Idea {r.idea} · Ejecución {r.execution} ·{" "}
+                      {r.would_repeat ? "repetiría" : "no repetiría"}
+                    </div>
+                    {r.comment && <p className="mt-1 text-sm text-stone-700">{r.comment}</p>}
+                  </div>
                 </div>
-                <div className="mt-1 text-sm">
-                  Idea {r.idea} · Ejecución {r.execution} ·{" "}
-                  {r.would_repeat ? "repetiría" : "no repetiría"}
-                </div>
-                {r.comment && <p className="mt-1 text-sm text-stone-700">{r.comment}</p>}
               </li>
             );
           })}
@@ -229,5 +229,26 @@ async function SignedInSections({ dishId, granularity }: { dishId: string; granu
         </ul>
       </div>
     </>
+  );
+}
+
+// Shown while SignedInSections' 4 parallel queries resolve, so the page shell
+// (photo, name, general average) paints immediately instead of waiting on them.
+function SignedInSectionsSkeleton() {
+  return (
+    <div className="mt-6 animate-pulse">
+      <div className="mb-2 h-4 w-32 rounded bg-stone-100" />
+      <div className="grid grid-cols-3 gap-3">
+        {[0, 1, 2].map((i) => (
+          <div key={i} className="h-16 rounded-xl border border-stone-100 bg-stone-50" />
+        ))}
+      </div>
+      <div className="mt-6 h-40 rounded-xl bg-stone-50" />
+      <div className="mt-8 flex flex-col gap-3">
+        {[0, 1].map((i) => (
+          <div key={i} className="h-16 rounded-lg border border-stone-100 bg-stone-50" />
+        ))}
+      </div>
+    </div>
   );
 }

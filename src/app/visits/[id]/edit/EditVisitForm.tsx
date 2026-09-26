@@ -27,6 +27,7 @@ type VisitData = {
     execution: number;
     would_repeat: boolean;
     comment: string | null;
+    photo_url: string | null;
     dish_id: string;
     dishes: { name: string } | null;
   }>;
@@ -49,6 +50,7 @@ export function EditVisitForm({ visit }: { visit: VisitData }) {
       wouldRepeat: dr.would_repeat,
       comment: dr.comment ?? "",
       price: null,
+      photoUrl: dr.photo_url,
     }))
   );
 
@@ -105,7 +107,16 @@ export function EditVisitForm({ visit }: { visit: VisitData }) {
             onClick={() =>
               setDishes((d) => [
                 ...d,
-                { dishId: null, dishName: null, idea: 4, execution: 4, wouldRepeat: true, comment: "", price: null },
+                {
+                  dishId: null,
+                  dishName: null,
+                  idea: 4,
+                  execution: 4,
+                  wouldRepeat: true,
+                  comment: "",
+                  price: null,
+                  photoUrl: null,
+                },
               ])
             }
           >

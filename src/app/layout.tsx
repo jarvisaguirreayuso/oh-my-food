@@ -2,8 +2,10 @@ import type { Metadata } from "next";
 import { Fraunces, Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { createClient } from "@/lib/supabase/server";
+import { getDesign } from "@/lib/design";
 import { BottomNav } from "@/components/BottomNav";
 import { HeaderNav } from "@/components/HeaderNav";
+import { DesignSwitcher } from "@/components/DesignSwitcher";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -30,6 +32,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  const design = await getDesign();
 
   return (
     <html
@@ -42,6 +45,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         </header>
         <main className={`flex-1 ${user ? "pb-24" : ""}`}>{children}</main>
         {user && <BottomNav />}
+        <DesignSwitcher current={design} />
       </body>
     </html>
   );

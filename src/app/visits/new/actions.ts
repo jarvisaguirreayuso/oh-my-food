@@ -52,6 +52,7 @@ export async function submitVisit(
       would_repeat: d.wouldRepeat,
       comment: d.comment ?? null,
       price: d.price ?? null,
+      photo_url: d.photoUrl ?? null,
     })),
   });
 
