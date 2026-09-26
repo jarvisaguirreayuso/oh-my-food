@@ -1,5 +1,6 @@
 "use server";
 
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
@@ -19,7 +20,14 @@ export async function sendMagicLink(_prev: LoginState, formData: FormData): Prom
   }
 
   const supabase = await createClient();
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  // Prefer the host the request came in on so preview deployments (one URL per
+  // branch) send the link back to themselves; Supabase still enforces its own
+  // redirect allowlist, so a spoofed host can't redirect anywhere unlisted.
+  const requestHeaders = await headers();
+  const host = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host");
+  const proto = requestHeaders.get("x-forwarded-proto") ?? (host?.startsWith("localhost") ? "http" : "https");
+  const siteUrl =
+    (host ? `${proto}://${host}` : undefined) ?? process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
   const { error } = await supabase.auth.signInWithOtp({
     email: parsed.data,
