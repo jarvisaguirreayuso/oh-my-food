@@ -1,7 +1,9 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { TYPE_LABELS, getPlaceGeneralScores } from "@/lib/places";
+import { getPlaceGeneralScores } from "@/lib/places";
+import { getDesignComponents } from "@/lib/design-components";
 import { PlaceEvolution } from "@/components/PlaceEvolution";
 import { DishRankings } from "@/components/DishRankings";
 import { PlaceHeaderActions } from "@/components/PlaceHeaderActions";
@@ -58,29 +60,48 @@ export default async function PlaceDetailPage({ params }: { params: Promise<{ id
     }
   }
 
+  const { PlaceHeader } = await getDesignComponents();
+
   return (
     <div className="mx-auto max-w-2xl px-4 py-6">
-      <div className="mb-2 flex items-start justify-between gap-3">
-        <div>
-          <h1 className="font-display text-2xl font-bold">{place.name}</h1>
-          <p className="text-sm text-stone-500">
-            {TYPE_LABELS[place.type] ?? place.type}
-            {place.address ? ` · ${place.address}` : ""}
-          </p>
-        </div>
-        {user && (
-          <PlaceHeaderActions
-            placeId={id}
-            saved={Boolean(saved?.data)}
-            lists={lists?.data ?? []}
-            memberOf={memberships?.data?.map((m) => m.list_id) ?? []}
-          />
-        )}
-      </div>
+      <PlaceHeader
+        place={place}
+        actionsSlot={
+          user ? (
+            <PlaceHeaderActions
+              placeId={id}
+              saved={Boolean(saved?.data)}
+              lists={lists?.data ?? []}
+              memberOf={memberships?.data?.map((m) => m.list_id) ?? []}
+            />
+          ) : undefined
+        }
+      />
 
       <PlaceStatSquares general={general} friends={friends} signedIn={Boolean(user)} />
 
-      {user ? <SignedInSections placeId={id} /> : <SignedOutSections placeId={id} />}
+      {user ? (
+        <Suspense fallback={<PlaceSignedInSkeleton />}>
+          <SignedInSections placeId={id} />
+        </Suspense>
+      ) : (
+        <SignedOutSections placeId={id} />
+      )}
+    </div>
+  );
+}
+
+// Shown while SignedInSections' evolution/rankings/reviews queries resolve, so
+// the header and stat squares above paint immediately.
+function PlaceSignedInSkeleton() {
+  return (
+    <div className="mt-6 animate-pulse">
+      <div className="h-40 rounded-xl bg-stone-50" />
+      <div className="mt-6 flex flex-col gap-2">
+        {[0, 1, 2].map((i) => (
+          <div key={i} className="h-10 rounded-lg border border-stone-100 bg-stone-50" />
+        ))}
+      </div>
     </div>
   );
 }

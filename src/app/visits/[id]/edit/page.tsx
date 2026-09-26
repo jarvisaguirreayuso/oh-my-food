@@ -13,7 +13,7 @@ export default async function EditVisitPage({ params }: { params: Promise<{ id: 
   const { data: visit } = await supabase
     .from("visits")
     .select(
-      "id, visited_on, place_rating, place_comment, place_id, audience, places(id, name), dish_reviews(id, idea, execution, would_repeat, comment, dish_id, dishes(name))"
+      "id, visited_on, place_rating, place_comment, place_id, audience, places(id, name), dish_reviews(id, idea, execution, would_repeat, comment, photo_url, dish_id, dishes(name))"
     )
     .eq("id", id)
     .eq("user_id", user.id)

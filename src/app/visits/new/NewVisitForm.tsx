@@ -22,6 +22,7 @@ function emptyDish(): DishEntryValue {
     wouldRepeat: true,
     comment: "",
     price: null,
+    photoUrl: null,
   };
 }
 
