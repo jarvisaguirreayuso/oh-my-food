@@ -1,28 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
-
-// Resizes/compresses the photo client-side before upload so each dish photo
-// stays well under the storage bucket's size cap.
-async function compressImage(file: File): Promise<Blob> {
-  const bitmap = await createImageBitmap(file);
-  const maxSide = 800;
-  const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
-  const canvas = document.createElement("canvas");
-  canvas.width = Math.round(bitmap.width * scale);
-  canvas.height = Math.round(bitmap.height * scale);
-  const ctx = canvas.getContext("2d");
-  if (!ctx) throw new Error("canvas unsupported");
-  ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-  return new Promise((resolve, reject) => {
-    canvas.toBlob(
-      (blob) => (blob ? resolve(blob) : reject(new Error("compression failed"))),
-      "image/jpeg",
-      0.6
-    );
-  });
-}
+import { useDishPhotoUpload } from "@/lib/hooks/useDishPhotoUpload";
 
 // `initialPhotoUrl` lets server-rendered pages that already fetched the dish
 // (e.g. the dish detail page) skip the extra client-side lookup. Leave it
@@ -38,7 +19,7 @@ export function DishPhotoUploader({
   size?: "sm" | "md" | "lg";
 }) {
   const [photoUrl, setPhotoUrl] = useState<string | null | undefined>(initialPhotoUrl);
-  const [uploading, setUploading] = useState(false);
+  const { upload, uploading } = useDishPhotoUpload();
 
   useEffect(() => {
     if (initialPhotoUrl !== undefined) return;
@@ -58,23 +39,10 @@ export function DishPhotoUploader({
   }, [dishId, initialPhotoUrl]);
 
   async function handleUpload(file: File) {
-    setUploading(true);
-    try {
-      const supabase = createClient();
-      const blob = await compressImage(file);
-      const path = `${dishId}-${Date.now()}.jpg`;
-      const { error: uploadError } = await supabase.storage
-        .from("dish-photos")
-        .upload(path, blob, { contentType: "image/jpeg" });
-      if (uploadError) throw uploadError;
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from("dish-photos").getPublicUrl(path);
-      await supabase.rpc("set_dish_photo", { p_dish_id: dishId, p_photo_url: publicUrl });
-      setPhotoUrl(publicUrl);
-    } finally {
-      setUploading(false);
-    }
+    const publicUrl = await upload(file, dishId);
+    const supabase = createClient();
+    await supabase.rpc("set_dish_photo", { p_dish_id: dishId, p_photo_url: publicUrl });
+    setPhotoUrl(publicUrl);
   }
 
   if (photoUrl === undefined) return null;
@@ -83,8 +51,15 @@ export function DishPhotoUploader({
 
   if (photoUrl) {
     return (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img src={photoUrl} alt="" className={`${dims} rounded-xl object-cover`} />
+      <div className={`relative ${dims} overflow-hidden rounded-xl`}>
+        <Image
+          src={photoUrl}
+          alt=""
+          fill
+          sizes={size === "lg" ? "(min-width: 640px) 640px, 100vw" : "64px"}
+          className="object-cover"
+        />
+      </div>
     );
   }
 

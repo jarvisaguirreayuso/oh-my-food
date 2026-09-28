@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { DeleteButton } from "./DeleteButton";
@@ -14,7 +15,7 @@ export default async function MyVisitsPage() {
   const { data: visits } = await supabase
     .from("visits")
     .select(
-      "id, visited_on, place_rating, place_comment, audience, pools_publicly, places(id, name), dish_reviews(id, idea, execution, would_repeat, dishes(name))"
+      "id, visited_on, place_rating, place_comment, audience, pools_publicly, places(id, name), dish_reviews(id, idea, execution, would_repeat, photo_url, dishes(name))"
     )
     .eq("user_id", user.id)
     .order("visited_on", { ascending: false });
@@ -44,6 +45,23 @@ export default async function MyVisitsPage() {
             </div>
             {v.place_rating && <div className="mt-1 text-sm">{"★".repeat(v.place_rating)}</div>}
             {v.place_comment && <p className="mt-1 text-sm text-stone-700">{v.place_comment}</p>}
+            {v.dish_reviews.some((dr) => dr.photo_url) && (
+              <div className="mt-2 flex gap-2 overflow-x-auto">
+                {v.dish_reviews
+                  .filter((dr) => dr.photo_url)
+                  .map((dr) => (
+                    <div key={dr.id} className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg">
+                      <Image
+                        src={dr.photo_url!}
+                        alt={dr.dishes?.name ?? ""}
+                        fill
+                        sizes="80px"
+                        className="object-cover"
+                      />
+                    </div>
+                  ))}
+              </div>
+            )}
             {v.dish_reviews.length > 0 && (
               <ul className="mt-2 flex flex-col gap-1 border-t pt-2 text-sm">
                 {v.dish_reviews.map((dr) => (

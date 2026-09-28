@@ -1,7 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getDesignComponents } from "@/lib/design-components";
 import { FollowButton } from "@/components/FollowButton";
-import { VisitCard } from "@/components/VisitCard";
 import Link from "next/link";
 
 export default async function UserProfilePage({ params }: { params: Promise<{ username: string }> }) {
@@ -20,6 +20,7 @@ export default async function UserProfilePage({ params }: { params: Promise<{ us
   if (!profile) notFound();
 
   const isMe = profile.id === user.id;
+  const { VisitCard } = await getDesignComponents();
 
   // The follow graph itself is private (RLS only lets you read edges you're part
   // of), so we don't surface this person's raw following/follower counts unless
@@ -32,7 +33,7 @@ export default async function UserProfilePage({ params }: { params: Promise<{ us
     supabase
       .from("visits")
       .select(
-        "id, visited_on, place_rating, place_comment, audience, places(id, name), dish_reviews(id, idea, execution, would_repeat, dishes(name))"
+        "id, visited_on, place_rating, place_comment, audience, places(id, name), dish_reviews(id, idea, execution, would_repeat, photo_url, dishes(name))"
       )
       .eq("user_id", profile.id)
       .order("visited_on", { ascending: false })

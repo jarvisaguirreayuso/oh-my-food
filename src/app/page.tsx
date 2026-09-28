@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getPlaceGeneralScores } from "@/lib/places";
 import { isProvisionalUsername } from "@/lib/validation";
 import { PlaceList } from "@/components/PlaceList";
-import { VisitCard } from "@/components/VisitCard";
+import { getDesignComponents } from "@/lib/design-components";
 import { Chip } from "@/components/ui/Chip";
 import { Stars } from "@/components/ui/Stars";
 import { getRecommendations } from "@/lib/recommendations";
@@ -20,6 +20,8 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
 
   if (!user) return <Landing />;
 
+  const { VisitCard } = await getDesignComponents();
+
   // First login: ask for a real username before anything else.
   const { data: me } = await supabase.from("profiles").select("username").eq("id", user.id).single();
   if (me && isProvisionalUsername(me.username)) redirect("/me/edit?welcome=1");
@@ -34,7 +36,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
     ? await supabase
         .from("visits")
         .select(
-          "id, visited_on, place_rating, place_comment, audience, places(id, name), profiles(username, display_name), dish_reviews(id, idea, execution, would_repeat, dishes(name))"
+          "id, visited_on, place_rating, place_comment, audience, places(id, name), profiles(username, display_name), dish_reviews(id, idea, execution, would_repeat, photo_url, dishes(name))"
         )
         .in("user_id", followeeIds)
         .order("created_at", { ascending: false })

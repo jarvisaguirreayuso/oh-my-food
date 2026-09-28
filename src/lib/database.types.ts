@@ -42,6 +42,7 @@ export type Database = {
           execution: number
           id: string
           idea: number
+          photo_url: string | null
           updated_at: string
           visit_id: string
           would_repeat: boolean
@@ -53,6 +54,7 @@ export type Database = {
           execution: number
           id?: string
           idea: number
+          photo_url?: string | null
           updated_at?: string
           visit_id: string
           would_repeat: boolean
@@ -64,6 +66,7 @@ export type Database = {
           execution?: number
           id?: string
           idea?: number
+          photo_url?: string | null
           updated_at?: string
           visit_id?: string
           would_repeat?: boolean

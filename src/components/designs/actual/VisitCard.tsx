@@ -1,35 +1,9 @@
 import Link from "next/link";
+import Image from "next/image";
 import { AUDIENCE_LABELS } from "@/lib/audience";
-import type { Audience } from "@/lib/validation";
+import type { VisitCardProps } from "@/components/designs/types";
 
-export type VisitCardData = {
-  id: string;
-  visited_on: string;
-  place_rating: number | null;
-  place_comment: string | null;
-  audience?: Audience;
-  places: { id: string; name: string } | null;
-  profiles?: { username: string; display_name: string | null } | null;
-  dish_reviews: Array<{
-    id: string;
-    idea: number;
-    execution: number;
-    would_repeat: boolean;
-    dishes: { name: string } | null;
-  }>;
-};
-
-export function VisitCard({
-  visit,
-  showAuthor = false,
-  showAudience = false,
-  showEdit = false,
-}: {
-  visit: VisitCardData;
-  showAuthor?: boolean;
-  showAudience?: boolean;
-  showEdit?: boolean;
-}) {
+export function VisitCard({ visit, showAuthor = false, showAudience = false, showEdit = false }: VisitCardProps) {
   const author = visit.profiles;
   return (
     <li className="rounded-xl border border-stone-200 p-4">
@@ -63,6 +37,17 @@ export function VisitCard({
         {visit.place_rating ? <span className="text-sm">{"★".repeat(visit.place_rating)}</span> : null}
       </div>
       {visit.place_comment && <p className="mt-1 text-sm text-stone-700">{visit.place_comment}</p>}
+      {visit.dish_reviews.some((dr) => dr.photo_url) && (
+        <div className="mt-2 flex gap-2 overflow-x-auto">
+          {visit.dish_reviews
+            .filter((dr) => dr.photo_url)
+            .map((dr) => (
+              <div key={dr.id} className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg">
+                <Image src={dr.photo_url!} alt={dr.dishes?.name ?? ""} fill sizes="80px" className="object-cover" />
+              </div>
+            ))}
+        </div>
+      )}
       {visit.dish_reviews.length > 0 && (
         <ul className="mt-2 flex flex-col gap-1 border-t pt-2 text-sm">
           {visit.dish_reviews.map((dr) => (

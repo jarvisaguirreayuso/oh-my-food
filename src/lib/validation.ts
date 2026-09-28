@@ -27,6 +27,9 @@ export const dishRatingSchema = z.object({
   comment: z.string().trim().max(2000).optional().nullable(),
   // Only used the first time a dish is created; ignored for existing dishes.
   price: z.number().positive().max(9999).optional().nullable(),
+  // The reviewer's own photo of this dish on this visit (distinct from the
+  // dish's single crowd-sourced photo_url) -- a Supabase Storage public URL.
+  photoUrl: z.url().max(500).optional().nullable(),
 }).refine((d) => d.dishId !== null || (d.dishName !== null && d.dishName.length >= 2), {
   message: "Selecciona un plato existente o escribe un nombre para uno nuevo",
   path: ["dishName"],
